@@ -1,0 +1,244 @@
+{
+  "idssHistoricalScores": [
+    {
+      "programYear": 2024,
+      "baseYear": 2023,
+      "score": 0.7787,
+      "source": "Unimed Resende (Oficial)"
+    },
+    {
+      "programYear": 2023,
+      "baseYear": 2022,
+      "score": 0.7421,
+      "source": "Unimed Resende (Oficial)"
+    }
+  ],
+  "dimensionHistoricalData": [
+    {
+      "year": 2023,
+      "dimensionScores": {
+        "IDQS": 0.8123,
+        "IDGA": 0.7500,
+        "IDSM": 0.8000,
+        "IDGR": 0.6500
+      }
+    },
+    {
+      "year": 2022,
+      "dimensionScores": {
+        "IDQS": 0.7900,
+        "IDGA": 0.7200,
+        "IDSM": 0.7800,
+        "IDGR": 0.6000
+      }
+    }
+  ],
+  "indicatorHistoricalData": [
+    {
+      "id": "1.1",
+      "results": [
+        { 
+          "year": 2022, 
+          "consolidatedValue": 93.16, 
+          "notaFinal": 0, 
+          "consolidatedAuxValue": null,
+          "periodicityUsed": "Anual",
+          "periodicData": [{ "periodLabel": "Anual", "value": 93.16, "auxValue": null }]
+        },
+        { 
+          "year": 2023, 
+          "consolidatedValue": 96.75, 
+          "notaFinal": 0, 
+          "consolidatedAuxValue": null,
+          "periodicityUsed": "Anual",
+          "periodicData": [{ "periodLabel": "Anual", "value": 96.75, "auxValue": null }]
+        }
+      ]
+    },
+    {
+      "id": "1.2",
+      "results": [
+        { 
+          "year": 2022, 
+          "consolidatedValue": 8.6273, 
+          "notaFinal": 1, 
+          "consolidatedAuxValue": null,
+          "periodicityUsed": "Semestral",
+          "periodicData": [
+            { "periodLabel": "Semestre 1", "value": 8.5, "auxValue": null },
+            { "periodLabel": "Semestre 2", "value": 8.7546, "auxValue": null }
+          ]
+        },
+        { 
+          "year": 2023, 
+          "consolidatedValue": 8.3006, 
+          "notaFinal": 1, 
+          "consolidatedAuxValue": null,
+          "periodicityUsed": null,
+          "periodicData": null
+        }
+      ]
+    },
+    {
+      "id": "1.3",
+      "results": [
+        { "year": 2022, "consolidatedValue": 3.0655, "notaFinal": 0.8346, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 4.6726, "notaFinal": 0.8481, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.4",
+      "results": [
+        { "year": 2022, "consolidatedValue": 0.9656, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.9274, "notaFinal": 0.9734, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.5",
+      "results": [
+        { "year": 2022, "consolidatedValue": 45.6649, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 47.1271, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.6",
+      "results": [
+        { "year": 2022, "consolidatedValue": 4.5616, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 5.2016, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.9",
+      "results": [
+        { "year": 2022, "consolidatedValue": 0.1131, "notaFinal": 0.3798, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.1024, "notaFinal": 0.3028, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.10", "results": [
+        { "year": 2022, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.11", "results": [
+        { "year": 2022, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "1.12", "results": [
+        { "year": 2022, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.1", "results": [
+        { "year": 2022, "consolidatedValue": 0.0174, "notaFinal": 0.2845, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.0429, "notaFinal": 0.6993, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.2", "results": [
+        { "year": 2022, "consolidatedValue": 0.5579, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.5109, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.3", "results": [
+        { "year": 2022, "consolidatedValue": 91.0797, "notaFinal": 0.9107, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 91.9158, "notaFinal": 0.9191, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.6", "results": [
+        { "year": 2022, "consolidatedValue": 0.0893, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.8354, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.7", "results": [
+        { "year": 2022, "consolidatedValue": 0.0079, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.4777, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.8", "results": [
+        { "year": 2022, "consolidatedValue": -0.0478, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": -0.0325, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "2.10", "results": [
+        { "year": 2022, "consolidatedValue": null, "notaFinal": null, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.9119, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "3.1", "results": [
+        { "year": 2022, "consolidatedValue": 1.2463, "notaFinal": 0.900, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 1.5120, "notaFinal": 0.950, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "3.2", "results": [
+        { "year": 2022, "consolidatedValue": 100, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 100, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "3.3", "results": [
+        { "year": 2022, "consolidatedValue": 4.3345, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 6.5783, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "3.4", "results": [
+        { "year": 2022, "consolidatedValue": 0, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "3.5", "results": [
+        { "year": 2022, "consolidatedValue": 0.2500, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.2500, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "3.6", "results": [
+        { "year": 2022, "consolidatedValue": 0.0844, "notaFinal": 0.7545, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.0978, "notaFinal": 0.5, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "4.1", "results": [
+        { "year": 2022, "consolidatedValue": 99.98, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 99.98, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "4.2", "results": [
+        { "year": 2022, "consolidatedValue": 99.98, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.0040, "notaFinal": 1, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "4.3", "results": [
+        { "year": 2022, "consolidatedValue": 1.1265, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 1.1355, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "4.4", "results": [
+        { "year": 2022, "consolidatedValue": 0.1647, "notaFinal": 0.2939, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 0.1859, "notaFinal": 0.1535, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    },
+    {
+      "id": "4.5", "results": [
+        { "year": 2022, "consolidatedValue": 60.41, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null },
+        { "year": 2023, "consolidatedValue": 31.96, "notaFinal": 0, "consolidatedAuxValue": null, "periodicityUsed": null, "periodicData": null }
+      ]
+    }
+  ]
+}

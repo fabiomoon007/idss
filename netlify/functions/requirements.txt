@@ -1,0 +1,3 @@
+google-generativeai
+# Se a geração de DOCX fosse migrada para uma função, adicionaríamos 'python-docx' aqui.
+# Por enquanto, apenas a dependência do Gemini é necessária para a função de análise.
