@@ -11,8 +11,7 @@ const getAPIKey = () => {
 };
 
 const formatNumber = (n: number | null | undefined): string => {
-    if (n === null || n === undefined) return 'N/A';
-    // Use toLocaleString for brazilian number format
+    if (n === null || n === undefined || isNaN(n)) return 'N/A';
     return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 };
 
@@ -23,7 +22,7 @@ const buildIndicatorPrompt = (data: GeminiAnalysisRequest['indicatorData'], type
     
     let prompt = `Você é um analista especialista em gestão de saúde suplementar (IDSS). Analise o seguinte indicador para uma operadora de saúde em um tom profissional, direto e conciso. Forneça a resposta em português do Brasil.
 
-Indicador: ${indicatorName} (Ano Base: ${activeReferenceYear})
+Indicador: ${indicatorName} (Ano Base: ${activeReferenceYear ?? 'N/A'})
 Descrição: ${description}
 Meta oficial: ${targetDescription}
 Setor Responsável: ${responsibleSector || 'Não definido'}
@@ -37,12 +36,12 @@ Com base na meta, este resultado é bom ou ruim? Por quê? Forneça uma análise
             break;
         case 'indicator_yearly_consolidated':
             prompt += `
-Análise Anual: O resultado consolidado para o ano de ${activeReferenceYear} foi ${formatNumber(currentValue)}, o que gerou uma nota final de ${formatNumber(notaFinal)} (de 0 a 1).
+Análise Anual: O resultado consolidado para o ano de ${activeReferenceYear ?? 'N/A'} foi ${formatNumber(currentValue)}, o que gerou uma nota final de ${formatNumber(notaFinal)} (de 0 a 1).
 Este desempenho anual atinge a meta? É um resultado forte ou fraco? Forneça uma análise concisa (máximo 2-3 frases) sobre o impacto deste resultado e o que ele representa.`;
             break;
         case 'indicator_yearly_comparison':
             prompt += `
-Análise Comparativa Anual: O resultado consolidado para ${activeReferenceYear} foi ${formatNumber(currentValue)}. No ano anterior (${activeReferenceYear - 1}), o resultado foi ${formatNumber(previousYearValue)}.
+Análise Comparativa Anual: O resultado consolidado para ${activeReferenceYear ?? 'N/A'} foi ${formatNumber(currentValue)}. No ano anterior (${activeReferenceYear ? activeReferenceYear - 1 : 'N/A'}), o resultado foi ${formatNumber(previousYearValue)}.
 Houve melhora, piora ou estagnação? O que essa tendência indica para a operadora? Forneça uma análise concisa (máximo 2-3 frases) sobre a evolução do indicador e sua implicação.`;
             break;
     }
@@ -60,7 +59,7 @@ const buildDimensionPrompt = (data: Dimension | undefined, year: number | undefi
         })
         .join('\n');
 
-    return `Você é um consultor estratégico de gestão em saúde. Analise o desempenho da dimensão '${data.name}' para uma operadora de saúde (Ano Base: ${year}).
+    return `Você é um consultor estratégico de gestão em saúde. Analise o desempenho da dimensão '${data.name}' para uma operadora de saúde (Ano Base: ${year ?? 'N/A'}).
 
 Dimensão: ${data.name} (Peso no IDSS: ${data.weightInIDSS * 100}%)
 Nota Final Calculada da Dimensão: ${formatNumber(data.notaFinalCalculada)}
@@ -81,7 +80,7 @@ const buildIdssPrompt = (data: IDSS | undefined, year: number | undefined): stri
       .map(d => `${d.id}: ${formatNumber(d.notaFinalCalculada)}`)
       .join(', ');
 
-    return `Você é um conselheiro executivo (C-level) para uma operadora de saúde. Analise o seguinte resultado simulado do IDSS (Ano Base: ${year}).
+    return `Você é um conselheiro executivo (C-level) para uma operadora de saúde. Analise o seguinte resultado simulado do IDSS (Ano Base: ${year ?? 'N/A'}).
 
 Nota Final IDSS Calculada: ${formatNumber(data.notaFinalCalculada)}
 
@@ -101,6 +100,10 @@ const buildOverallIndicatorsPrompt = (data: Indicator[] | undefined, year: numbe
         return { name: ind.simpleName, score: result ? result.notaFinal : null };
     }).filter(item => item.score !== null);
 
+    if (allScores.length === 0) {
+      return "Não há indicadores com notas calculadas para analisar."
+    }
+
     const sortedScores = allScores.sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
     const best = sortedScores.slice(0, 3);
     const worst = sortedScores.slice(-3).reverse();
@@ -108,7 +111,7 @@ const buildOverallIndicatorsPrompt = (data: Indicator[] | undefined, year: numbe
     const bestText = best.map(s => `- ${s.name}: Nota ${formatNumber(s.score)}`).join('\n');
     const worstText = worst.map(s => `- ${s.name}: Nota ${formatNumber(s.score)}`).join('\n');
 
-    return `Você é um analista de dados especialista em performance de saúde. Analise a lista de indicadores para o ano base ${year} e identifique os 3 melhores e os 3 piores desempenhos.
+    return `Você é um analista de dados especialista em performance de saúde. Analise a lista de indicadores para o ano base ${year ?? 'N/A'} e identifique os 3 melhores e os 3 piores desempenhos.
 
 Apresente a resposta em português do Brasil de forma clara e objetiva.
 
@@ -154,6 +157,10 @@ export const handler: Handler = async (event) => {
              return { statusCode: 400, body: JSON.stringify({ error: "Invalid analysis type" }) };
     }
 
+    if (!prompt) {
+        return { statusCode: 400, body: JSON.stringify({ error: "Could not generate a valid prompt for analysis." }) };
+    }
+    
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-04-17',
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -167,8 +174,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ analysis: analysisText }),
     };
 
-  } catch (error: any)
-{
+  } catch (error: any) {
     console.error("Error in Gemini function:", error);
     return {
       statusCode: 500,

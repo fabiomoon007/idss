@@ -5,7 +5,7 @@ import { IndicatorWeightBar } from './IndicatorWeightBar';
 import { IndicatorAnalysisSection } from './IndicatorAnalysisSection';
 import { getPeriodLabels } from '../constants';
 import { getGeminiAnalysis } from '../services/geminiService';
-import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info } from 'lucide-react';
+import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info, Check } from 'lucide-react';
 
 interface IndicatorCardProps {
   indicator: Indicator;
@@ -16,28 +16,26 @@ interface IndicatorCardProps {
 
 type LocalAnalysisType = 'lastPeriod' | 'yearlyConsolidated' | 'yearlyComparison';
 
-
 export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdateIndicator, operatorSize, activeReferenceYear }) => {
-  const activeYearResult = indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear);
+  const [activeYearResult, setActiveYearResult] = useState(() => indicator.results.find(r => r.year === activeReferenceYear));
+  const [isDirty, setIsDirty] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'idle'>('idle');
   
-  const getInitialPeriodicity = () => {
-    if (activeYearResult && activeYearResult.periodicityUsed && indicator.periodicityOptions.includes(activeYearResult.periodicityUsed)) {
-        return activeYearResult.periodicityUsed;
-    }
-    return indicator.currentPeriodicity;
-  };
+  const getInitialPeriodicity = useCallback(() => {
+    return activeYearResult?.periodicityUsed || indicator.currentPeriodicity;
+  }, [activeYearResult, indicator.currentPeriodicity]);
 
   const [currentPeriodicity, setCurrentPeriodicity] = useState<Periodicity>(getInitialPeriodicity());
 
-  const getInitialPeriodicData = useCallback((year: number, periodicity: Periodicity) => {
-    const existingResult = indicator.results.find((r: IndicatorResult) => r.year === year);
-    const periodLabels = getPeriodLabels(periodicity);
-    
-    if (existingResult && Array.isArray(existingResult.periodicData) && existingResult.periodicData.length > 0) {
-      return periodLabels.map(label => {
-        const foundEntry = existingResult.periodicData.find(pd => pd.periodLabel === label);
-        return foundEntry || { periodLabel: label, value: null, auxValue: null };
-      });
+  const getInitialPeriodicData = useCallback(() => {
+    const periodLabels = getPeriodLabels(currentPeriodicity);
+    const existingData = activeYearResult?.periodicData;
+
+    if (existingData && existingData.length > 0 && activeYearResult?.periodicityUsed === currentPeriodicity) {
+        return periodLabels.map(label => {
+            const foundEntry = existingData.find(pd => pd.periodLabel === label);
+            return foundEntry || { periodLabel: label, value: null, auxValue: null };
+        });
     }
     
     return periodLabels.map((label: string): PeriodicEntry => ({
@@ -45,159 +43,158 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
       value: null,
       auxValue: null,
     }));
-  }, [indicator.results]);
+  }, [currentPeriodicity, activeYearResult]);
 
-  const [activeYearPeriodicInput, setActiveYearPeriodicInput] = useState<PeriodicEntry[]>([]);
+  const [activeYearPeriodicInput, setActiveYearPeriodicInput] = useState<PeriodicEntry[]>(getInitialPeriodicData());
   const [analysisLoadingStates, setAnalysisLoadingStates] = useState({ lastPeriod: false, yearlyConsolidated: false, yearlyComparison: false });
-  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    setActiveYearPeriodicInput(getInitialPeriodicData(activeReferenceYear, currentPeriodicity));
+    const newActiveYearResult = indicator.results.find(r => r.year === activeReferenceYear);
+    setActiveYearResult(newActiveYearResult);
+    const newPeriodicity = newActiveYearResult?.periodicityUsed || indicator.currentPeriodicity;
+    setCurrentPeriodicity(newPeriodicity);
+  }, [activeReferenceYear, indicator.results, indicator.currentPeriodicity]);
+
+  useEffect(() => {
+    setActiveYearPeriodicInput(getInitialPeriodicData());
+    setSaveStatus('idle');
     setIsDirty(false);
-  }, [activeReferenceYear, currentPeriodicity, indicator.results, indicator.id, getInitialPeriodicData]);
+  }, [activeYearResult, getInitialPeriodicData]);
 
   const consolidateValues = useCallback((data: PeriodicEntry[], field: 'value' | 'auxValue' = 'value'): number | null => {
     if (!data) return null;
-    const values = data.map((entry: PeriodicEntry) => field === 'value' ? entry.value : entry.auxValue).filter(v => v !== null) as number[];
+    const values = data.map(entry => field === 'value' ? entry.value : entry.auxValue).filter(v => v !== null) as number[];
     if (values.length === 0) return null;
 
-    if(indicator.valueConsolidationFn){
+    if (indicator.valueConsolidationFn) {
       return indicator.valueConsolidationFn(values);
     }
-    // Default: average
-    const sum = values.reduce((s, v) => s + v, 0);
-    return parseFloat((sum / values.length).toFixed(4));
+    // Default: first value if only one, otherwise average
+    return values.length === 1 ? values[0] : averageConsolidation(values);
   }, [indicator.valueConsolidationFn]);
+  
+  const averageConsolidation = (periodicValues: (number | null)[]) => {
+      const validValues = periodicValues.filter(v => v !== null) as number[];
+      if (validValues.length === 0) return null;
+      const sum = validValues.reduce((s, val) => s + val, 0);
+      return parseFloat((sum / validValues.length).toFixed(4));
+  };
 
   const { localConsolidatedValue, localNotaFinal } = useMemo(() => {
     const cv = consolidateValues(activeYearPeriodicInput, 'value');
     const cAv = indicator.requiresAuxValue ? consolidateValues(activeYearPeriodicInput, 'auxValue') : undefined;
     const nf = indicator.calcularNotaFinalFn(cv, cAv, operatorSize, indicator.parametersByPorte);
     return { localConsolidatedValue: cv, localNotaFinal: nf };
-  }, [activeYearPeriodicInput, consolidateValues, indicator.calcularNotaFinalFn, indicator.requiresAuxValue, indicator.parametersByPorte, operatorSize]);
-
+  }, [activeYearPeriodicInput, consolidateValues, indicator, operatorSize]);
 
   const handlePeriodicityChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const newPeriodicity = e.target.value as Periodicity;
     setCurrentPeriodicity(newPeriodicity);
     setIsDirty(true);
+    setSaveStatus('idle');
   };
 
   const handlePeriodicInputChange = (index: number, field: 'value' | 'auxValue', inputValue: string) => {
-    const numericValue = inputValue === '' ? null : parseFloat(inputValue.replace(',', '.'));
-    setActiveYearPeriodicInput((prev: PeriodicEntry[]) =>
-      prev.map((entry: PeriodicEntry, i: number) => (i === index ? { ...entry, [field]: numericValue } : entry))
+    const numericValue = inputValue.trim() === '' ? null : parseFloat(inputValue.replace(',', '.'));
+    setActiveYearPeriodicInput(prev =>
+      prev.map((entry, i) => (i === index ? { ...entry, [field]: numericValue } : entry))
     );
     setIsDirty(true);
+    setSaveStatus('idle');
   };
   
   const handleSubmitResults = useCallback(() => {
     if(!isDirty) return;
 
-    const updatedResults = indicator.results.map((r: IndicatorResult) => {
-      if (r.year === activeReferenceYear) {
-        return {
-          ...r,
-          periodicData: [...activeYearPeriodicInput],
-          periodicityUsed: currentPeriodicity, // Save the used periodicity
-          consolidatedValue: localConsolidatedValue,
-          consolidatedAuxValue: indicator.requiresAuxValue ? consolidateValues(activeYearPeriodicInput, 'auxValue') : r.consolidatedAuxValue,
-          notaFinal: localNotaFinal,
-          // Clear previous analyses as data has changed
-          analysisLastPeriod: undefined, analysisYearlyConsolidated: undefined, analysisYearlyComparison: undefined,
-          errorLastPeriod: undefined, errorYearlyConsolidated: undefined, errorYearlyComparison: undefined,
-        };
-      }
-      return r;
-    });
-    
-    // Ensure result for the year exists
-    if (!updatedResults.find(r => r.year === activeReferenceYear)) {
-      updatedResults.push({
-        year: activeReferenceYear,
+    const newResultForYear = {
+        ...(activeYearResult || { year: activeReferenceYear }),
         periodicData: [...activeYearPeriodicInput],
         periodicityUsed: currentPeriodicity,
         consolidatedValue: localConsolidatedValue,
-        consolidatedAuxValue: indicator.requiresAuxValue ? consolidateValues(activeYearPeriodicInput, 'auxValue') : undefined,
+        consolidatedAuxValue: indicator.requiresAuxValue ? consolidateValues(activeYearPeriodicInput, 'auxValue') : activeYearResult?.consolidatedAuxValue,
         notaFinal: localNotaFinal,
-      } as IndicatorResult);
-    }
+        analysisLastPeriod: undefined, analysisYearlyConsolidated: undefined, analysisYearlyComparison: undefined,
+        errorLastPeriod: undefined, errorYearlyConsolidated: undefined, errorYearlyComparison: undefined,
+    };
+    
+    const otherResults = indicator.results.filter(r => r.year !== activeReferenceYear);
+    const updatedResults = [...otherResults, newResultForYear].sort((a,b) => a.year - b.year);
 
-    onUpdateIndicator({ ...indicator, currentPeriodicity, results: updatedResults.sort((a, b) => a.year - b.year) });
+    onUpdateIndicator({ ...indicator, results: updatedResults });
     setIsDirty(false);
-  }, [isDirty, activeYearPeriodicInput, indicator, operatorSize, onUpdateIndicator, activeReferenceYear, currentPeriodicity, consolidateValues, localConsolidatedValue, localNotaFinal]);
+    setSaveStatus('saved');
+    setTimeout(() => setSaveStatus('idle'), 2000);
+
+  }, [isDirty, activeYearPeriodicInput, indicator, onUpdateIndicator, activeReferenceYear, currentPeriodicity, consolidateValues, localConsolidatedValue, localNotaFinal, activeYearResult]);
 
   const handleTriggerAnalysis = async (analysisType: LocalAnalysisType) => {
     setAnalysisLoadingStates(prev => ({ ...prev, [analysisType]: true }));
     const errorField = `error${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}` as keyof IndicatorResult;
-    let geminiRequestType: GeminiAnalysisTypeInternal;
-    let requestData: GeminiAnalysisRequest['indicatorData'] = {
-        indicatorName: indicator.name, simpleName: indicator.simpleName, description: indicator.description,
-        targetDescription: indicator.targetDescription, isRate: indicator.isRate,
-        parametersForPorte: operatorSize && indicator.parametersByPorte ? indicator.parametersByPorte[operatorSize] : undefined,
-        responsibleSector: indicator.responsibleSector, targetDirection: indicator.targetDirection,
-        activeReferenceYear: activeReferenceYear
-    };
     
     const updateError = (message: string) => {
-       onUpdateIndicator({...indicator, results: indicator.results.map(r => r.year === activeReferenceYear ? {...r, [errorField]: message} : r)});
+       const updatedResults = indicator.results.map(r => r.year === activeReferenceYear ? {...r, [errorField]: message} : r);
+       onUpdateIndicator({...indicator, results: updatedResults});
        setAnalysisLoadingStates(prev => ({...prev, [analysisType]: false}));
-    }
-
-    if (analysisType === 'lastPeriod') {
-      const lastFilledEntry = [...activeYearPeriodicInput].reverse().find(p => p.value !== null);
-      if (!lastFilledEntry || lastFilledEntry.value === null) { return updateError("Nenhum valor preenchido no período atual para análise."); }
-      requestData.currentValue = lastFilledEntry.value;
-      requestData.currentPeriodLabel = lastFilledEntry.periodLabel;
-      geminiRequestType = 'indicator_last_period';
-    } else { // yearlyConsolidated or yearlyComparison
-      if (localConsolidatedValue === null) { return updateError("Valor consolidado anual é nulo. Análise não pode ser gerada."); }
-      requestData.currentValue = localConsolidatedValue;
-      if (analysisType === 'yearlyConsolidated') {
-        requestData.notaFinal = localNotaFinal;
-        geminiRequestType = 'indicator_yearly_consolidated';
-      } else { // yearlyComparison
-        const previousYearResult = indicator.results.find(r => r.year === activeReferenceYear - 1);
-        requestData.previousYearValue = previousYearResult?.consolidatedValue ?? null;
-        geminiRequestType = 'indicator_yearly_comparison';
-      }
-    }
+    };
     
-    const finalRequest: GeminiAnalysisRequest = { type: geminiRequestType, indicatorData: requestData, operatorSize, activeReferenceYear };
+    let request: GeminiAnalysisRequest;
+    
     try {
-      const analysisText = await getGeminiAnalysis(finalRequest);
-      const analysisField = `analysis${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}` as keyof IndicatorResult;
-      onUpdateIndicator({...indicator, results: indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: analysisText, [errorField]: undefined } : r)});
+        const lastFilledEntry = [...activeYearPeriodicInput].reverse().find(p => p.value !== null);
+        const previousYearResult = indicator.results.find(r => r.year === activeReferenceYear - 1);
+
+        const baseIndicatorData = {
+          indicatorName: indicator.name, simpleName: indicator.simpleName, description: indicator.description,
+          targetDescription: indicator.targetDescription, isRate: indicator.isRate,
+          parametersForPorte: operatorSize && indicator.parametersByPorte ? indicator.parametersByPorte[operatorSize] : undefined,
+          responsibleSector: indicator.responsibleSector, targetDirection: indicator.targetDirection,
+          activeReferenceYear: activeReferenceYear
+        };
+
+        if (analysisType === 'lastPeriod') {
+            if (!lastFilledEntry || lastFilledEntry.value === null) { throw new Error("Nenhum valor preenchido no período atual para análise."); }
+            request = { type: 'indicator_last_period', indicatorData: { ...baseIndicatorData, currentValue: lastFilledEntry.value, currentPeriodLabel: lastFilledEntry.periodLabel }, operatorSize, activeReferenceYear };
+        } else if (analysisType === 'yearlyConsolidated') {
+            if (localConsolidatedValue === null) { throw new Error("Valor consolidado anual é nulo. Análise não pode ser gerada."); }
+            request = { type: 'indicator_yearly_consolidated', indicatorData: { ...baseIndicatorData, currentValue: localConsolidatedValue, notaFinal: localNotaFinal }, operatorSize, activeReferenceYear };
+        } else if (analysisType === 'yearlyComparison') {
+            if (localConsolidatedValue === null) { throw new Error("Valor consolidado anual é nulo. Análise não pode ser gerada."); }
+            request = { type: 'indicator_yearly_comparison', indicatorData: { ...baseIndicatorData, currentValue: localConsolidatedValue, previousYearValue: previousYearResult?.consolidatedValue ?? null }, operatorSize, activeReferenceYear };
+        } else {
+            throw new Error("Tipo de análise desconhecido.");
+        }
+    
+        const analysisText = await getGeminiAnalysis(request);
+        const analysisField = `analysis${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}` as keyof IndicatorResult;
+        const updatedResults = indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: analysisText, [errorField]: undefined } : r);
+        onUpdateIndicator({...indicator, results: updatedResults});
     } catch (e: any) {
-      updateError(e.message || `Erro na análise (${analysisType})`);
+        updateError(e.message || `Erro na análise (${analysisType})`);
     } finally {
-       setAnalysisLoadingStates(prev => ({ ...prev, [analysisType]: false }));
+        setAnalysisLoadingStates(prev => ({...prev, [analysisType]: false }));
     }
   };
 
   const handleCloseAnalysis = (analysisTypeToClose: LocalAnalysisType) => {
     const analysisField = `analysis${analysisTypeToClose.charAt(0).toUpperCase() + analysisTypeToClose.slice(1)}` as keyof IndicatorResult;
     const errorField = `error${analysisTypeToClose.charAt(0).toUpperCase() + analysisTypeToClose.slice(1)}` as keyof IndicatorResult;
-    onUpdateIndicator({...indicator, results: indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: undefined, [errorField]: undefined } : r)});
+    const updatedResults = indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: undefined, [errorField]: undefined } : r);
+    onUpdateIndicator({...indicator, results: updatedResults});
   };
 
-  const activeYearDisplayResult = indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear);
-  const isAnyAnalysisButtonDisabled = localConsolidatedValue === null;
-  const hasAnyPeriodicValueForActiveYear = activeYearPeriodicInput.some(p => p.value !== null);
-  
   const renderTargetDirectionIcon = () => {
-    if (indicator.targetDirection === 'up') return <ArrowUpCircle size={18} className="text-black inline-block ml-1" aria-label="Meta é subir" />;
-    if (indicator.targetDirection === 'down') return <ArrowDownCircle size={18} className="text-black inline-block ml-1" aria-label="Meta é descer" />;
+    if (indicator.targetDirection === 'up') return <ArrowUpCircle size={18} className="text-gray-800 inline-block ml-1" aria-label="Meta é subir" />;
+    if (indicator.targetDirection === 'down') return <ArrowDownCircle size={18} className="text-gray-800 inline-block ml-1" aria-label="Meta é descer" />;
     return null; 
   };
 
   const getBarColorForPeriodicNotaFinal = (nota: number | null): string => {
-    if (nota === null) return '#9ca3af'; // gray-400
-    if (nota <= 0.19) return '#ef4444'; // red-500
-    if (nota <= 0.39) return '#f97316'; // orange-500
-    if (nota <= 0.59) return '#eab308'; // yellow-500
-    if (nota <= 0.79) return '#84cc16'; // lime-500
-    return '#22c55e'; // green-500
+    if (nota === null) return '#9ca3af';
+    if (nota <= 0.19) return '#ef4444';
+    if (nota <= 0.39) return '#f97316';
+    if (nota <= 0.59) return '#eab308';
+    if (nota <= 0.79) return '#84cc16';
+    return '#22c55e';
   };
 
   const periodicChartData: PeriodicChartDataPoint[] = useMemo(() => {
@@ -208,14 +205,20 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
         const fillColor = getBarColorForPeriodicNotaFinal(notaFinalForPeriod);
         return { periodLabel: entry.periodLabel, value: entry.value!, fillColor };
       });
-  }, [activeYearPeriodicInput, indicator.calcularNotaFinalFn, operatorSize, indicator.parametersByPorte]);
+  }, [activeYearPeriodicInput, indicator, operatorSize]);
   
   const baseId = `${indicator.id}-${activeReferenceYear}`;
   const analysisSections = [
-    { type: 'lastPeriod', label: 'Último Período vs Ficha Técnica', analysis: activeYearDisplayResult?.analysisLastPeriod, error: activeYearDisplayResult?.errorLastPeriod, loading: analysisLoadingStates.lastPeriod, disabledOverride: analysisLoadingStates.lastPeriod || !hasAnyPeriodicValueForActiveYear },
-    { type: 'yearlyConsolidated', label: 'Resultado Anual vs Ficha Técnica', analysis: activeYearDisplayResult?.analysisYearlyConsolidated, error: activeYearDisplayResult?.errorYearlyConsolidated, loading: analysisLoadingStates.yearlyConsolidated, disabledOverride: isAnyAnalysisButtonDisabled || analysisLoadingStates.yearlyConsolidated },
-    { type: 'yearlyComparison', label: 'Resultado Anual vs Ano Anterior', analysis: activeYearDisplayResult?.analysisYearlyComparison, error: activeYearDisplayResult?.errorYearlyComparison, loading: analysisLoadingStates.yearlyComparison, disabledOverride: isAnyAnalysisButtonDisabled || analysisLoadingStates.yearlyComparison },
+    { type: 'lastPeriod', label: 'Último Período vs Ficha Técnica', analysis: activeYearResult?.analysisLastPeriod, error: activeYearResult?.errorLastPeriod, loading: analysisLoadingStates.lastPeriod, disabledOverride: !activeYearPeriodicInput.some(p => p.value !== null) },
+    { type: 'yearlyConsolidated', label: 'Resultado Anual vs Ficha Técnica', analysis: activeYearResult?.analysisYearlyConsolidated, error: activeYearResult?.errorYearlyConsolidated, loading: analysisLoadingStates.yearlyConsolidated, disabledOverride: localConsolidatedValue === null },
+    { type: 'yearlyComparison', label: 'Resultado Anual vs Ano Anterior', analysis: activeYearResult?.analysisYearlyComparison, error: activeYearResult?.errorYearlyComparison, loading: analysisLoadingStates.yearlyComparison, disabledOverride: localConsolidatedValue === null },
   ];
+  
+  const SaveButtonContent = () => {
+      if (saveStatus === 'saved') return <><Check size={18} className="mr-2"/> Salvo!</>;
+      if (isDirty) return <><Save size={18} className="mr-2"/> Salvar Resultados</>;
+      return <><Save size={18} className="mr-2"/> Resultados Salvos</>;
+  };
 
   return (
     <div className="bg-base-200 shadow-lg rounded-xl p-6 mb-6 transition-all duration-300 hover:shadow-xl flex flex-col h-full">
@@ -241,19 +244,19 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
             <input
               id={`input-value-${baseId}-${index}`}
               type="text" placeholder={indicator.valueLabel || (indicator.isRate ? "Taxa (%)" : "Valor")}
-              value={entry.value === null ? '' : String(entry.value)}
+              value={entry.value === null ? '' : String(entry.value).replace('.',',')}
               onChange={(e) => handlePeriodicInputChange(index, 'value', e.target.value)}
               className="col-span-1 mt-1 md:mt-0 block w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary sm:text-xs"
-              aria-label={`${indicator.valueLabel || "Valor"} para ${entry.periodLabel} em ${activeReferenceYear}`}
+              aria-label={`${indicator.valueLabel || "Valor"} para ${entry.periodLabel}`}
             />
             {indicator.requiresAuxValue && (
               <input
                 id={`input-aux-value-${baseId}-${index}`}
                 type="text" placeholder={indicator.auxValueLabel || "Valor Aux."}
-                value={entry.auxValue === null ? '' : String(entry.auxValue)}
+                value={entry.auxValue === null ? '' : String(entry.auxValue).replace('.',',')}
                 onChange={(e) => handlePeriodicInputChange(index, 'auxValue', e.target.value)}
                 className="col-span-1 mt-1 md:mt-0 block w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary sm:text-xs"
-                aria-label={`${indicator.auxValueLabel || "Valor Auxiliar"} para ${entry.periodLabel} em ${activeReferenceYear}`}
+                aria-label={`${indicator.auxValueLabel || "Valor Auxiliar"} para ${entry.periodLabel}`}
               />
             )}
           </div>
@@ -263,11 +266,14 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
       <div className="mt-4 flex justify-end">
         <button
           onClick={handleSubmitResults}
-          disabled={!isDirty || Object.values(analysisLoadingStates).some(s => s)}
-          className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          disabled={!isDirty}
+          className={`font-bold py-2 px-4 rounded-lg shadow-md flex items-center transition-colors duration-200
+            ${!isDirty && saveStatus === 'idle' ? 'bg-gray-400 cursor-not-allowed' : ''}
+            ${isDirty ? 'bg-secondary hover:bg-secondary-focus text-white' : ''}
+            ${saveStatus === 'saved' ? 'bg-success text-white' : ''}
+          `}
         >
-          <Save size={18} className="mr-2"/>
-          {isDirty ? 'Salvar Resultados' : 'Resultados Salvos'}
+          <SaveButtonContent />
         </button>
       </div>
 
@@ -282,7 +288,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
               analysis={section.analysis}
               error={section.error}
               loading={section.loading}
-              disabled={section.disabledOverride}
+              disabled={section.disabledOverride || Object.values(analysisLoadingStates).some(s => s)}
               onTrigger={() => handleTriggerAnalysis(section.type as LocalAnalysisType)}
               onClose={() => handleCloseAnalysis(section.type as LocalAnalysisType)}
             />

@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "@netlify/functions"]
+    "types": ["vite/client", "@netlify/functions", "node"]
   },
   "include": [
     "src",
