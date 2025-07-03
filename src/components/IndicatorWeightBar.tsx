@@ -1,13 +1,11 @@
-
-
 import React from 'react';
-import { IDSSIndicatorWeightLevel } from '../types.js';
+import { IDSSIndicatorWeightLevel } from '../types';
 
 interface IndicatorWeightBarProps {
   level: IDSSIndicatorWeightLevel;
 }
 
-const IndicatorWeightBar: React.FC<IndicatorWeightBarProps> = ({ level }) => {
+export const IndicatorWeightBar: React.FC<IndicatorWeightBarProps> = ({ level }) => {
   let bgColor = '';
   let label = '';
   let textColor = 'text-gray-700'; // Default text color
@@ -39,5 +37,3 @@ const IndicatorWeightBar: React.FC<IndicatorWeightBarProps> = ({ level }) => {
     </div>
   );
 };
-
-export default IndicatorWeightBar;

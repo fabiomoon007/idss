@@ -1,6 +1,1 @@
-{
-  "name": "Radar IDSS Netlify 25.06.2025",
-  "description": "A web application to manage and analyze IDSS (√çndice de Desempenho da Sa√∫de Suplementar) indicators for health plan operators. It allows inputting results, calculating scores, and generating AI-powered analysis for indicators, dimensions, and the overall IDSS score.",
-  "requestFramePermissions": [],
-  "prompt": ""
-}
+{  "name": "Radar IDSS Netlify",  "description": "A web application to manage and analyze IDSS (Õndice de Desempenho da Sa˙de Suplementar) indicators for health plan operators. It allows inputting results, calculating scores, and generating AI-powered analysis for indicators, dimensions, and the overall IDSS score.",  "requestFramePermissions": [],  "prompt": ""}
