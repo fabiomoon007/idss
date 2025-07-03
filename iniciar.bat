@@ -1,2 +1,3 @@
-npm run tsc
-npx serve .
+git add .
+git commit -m "atualizacao"
+git push
