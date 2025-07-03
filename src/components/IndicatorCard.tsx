@@ -4,9 +4,9 @@ import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, A
 import { ChartComponent, PeriodicChartDataPoint } from './ChartComponent'; 
 import { IndicatorWeightBar } from './IndicatorWeightBar';
 import { IndicatorAnalysisSection } from './IndicatorAnalysisSection';
-import { getPeriodLabels } from '../src/constants';
-import { getGeminiAnalysis } from '../src/services';
-import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info, Check } from 'lucide-react';
+import { getPeriodLabels } from '../constants';
+import { getGeminiAnalysis } from '../services/geminiService';
+import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info } from 'lucide-react';
 
 interface IndicatorCardProps {
   indicator: Indicator;
@@ -51,14 +51,11 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
   const [activeYearPeriodicInput, setActiveYearPeriodicInput] = useState<PeriodicEntry[]>([]);
   const [analysisLoadingStates, setAnalysisLoadingStates] = useState({ lastPeriod: false, yearlyConsolidated: false, yearlyComparison: false });
   const [isDirty, setIsDirty] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'idle'>('idle');
 
   useEffect(() => {
-    setCurrentPeriodicity(getInitialPeriodicity());
-    setActiveYearPeriodicInput(getInitialPeriodicData(activeReferenceYear, getInitialPeriodicity()));
+    setActiveYearPeriodicInput(getInitialPeriodicData(activeReferenceYear, currentPeriodicity));
     setIsDirty(false);
-    setSaveStatus('idle');
-  }, [activeReferenceYear, currentPeriodicity, indicator.results, indicator.id, getInitialPeriodicData, getInitialPeriodicity]);
+  }, [activeReferenceYear, currentPeriodicity, indicator.results, indicator.id, getInitialPeriodicData]);
 
   const consolidateValues = useCallback((data: PeriodicEntry[], field: 'value' | 'auxValue' = 'value'): number | null => {
     if (!data) return null;
@@ -80,13 +77,13 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     return { localConsolidatedValue: cv, localNotaFinal: nf };
   }, [activeYearPeriodicInput, consolidateValues, indicator.calcularNotaFinalFn, indicator.requiresAuxValue, indicator.parametersByPorte, operatorSize]);
 
+
   const handlePeriodicInputChange = (index: number, field: 'value' | 'auxValue', inputValue: string) => {
     const numericValue = inputValue === '' ? null : parseFloat(inputValue.replace(',', '.'));
     setActiveYearPeriodicInput((prev: PeriodicEntry[]) =>
       prev.map((entry: PeriodicEntry, i: number) => (i === index ? { ...entry, [field]: numericValue } : entry))
     );
     setIsDirty(true);
-    setSaveStatus('idle');
   };
   
   const handleSubmitResults = useCallback(() => {
@@ -123,8 +120,6 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
 
     onUpdateIndicator({ ...indicator, currentPeriodicity, results: updatedResults.sort((a, b) => a.year - b.year) });
     setIsDirty(false);
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('idle'), 2000);
   }, [isDirty, activeYearPeriodicInput, indicator, operatorSize, onUpdateIndicator, activeReferenceYear, currentPeriodicity, consolidateValues, localConsolidatedValue, localNotaFinal]);
 
   const handleTriggerAnalysis = async (analysisType: LocalAnalysisType) => {
@@ -217,12 +212,6 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     { type: 'yearlyComparison', label: 'Resultado Anual vs Ano Anterior', analysis: activeYearDisplayResult?.analysisYearlyComparison, error: activeYearDisplayResult?.errorYearlyComparison, loading: analysisLoadingStates.yearlyComparison, disabledOverride: isAnyAnalysisButtonDisabled || analysisLoadingStates.yearlyComparison },
   ];
 
-  const SaveButtonContent = () => {
-      if (saveStatus === 'saved') return <><Check size={18} className="mr-2"/> Salvo!</>;
-      if (isDirty) return <><Save size={18} className="mr-2"/> Salvar Resultados</>;
-      return <><Save size={18} className="mr-2"/> Resultados Salvos</>;
-  };
-
   return (
     <div className="bg-base-200 shadow-lg rounded-xl p-6 mb-6 transition-all duration-300 hover:shadow-xl flex flex-col h-full">
       <h3 className="text-xl font-semibold text-primary mb-1">{indicator.id} - {indicator.name}</h3>
@@ -267,13 +256,11 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
       <div className="mt-4 flex justify-end">
         <button
           onClick={handleSubmitResults}
-          disabled={!isDirty || Object.values(analysisLoadingStates).some(s => s) || saveStatus === 'saved'}
-          className={`font-bold py-2 px-4 rounded-lg shadow-md flex items-center transition-colors duration-200
-            ${!isDirty || saveStatus === 'saved' ? 'bg-gray-400 cursor-not-allowed' : 'bg-secondary hover:bg-secondary-focus'}
-            ${saveStatus === 'saved' ? 'bg-green-500 hover:bg-green-600' : ''}
-             text-white`}
+          disabled={!isDirty || Object.values(analysisLoadingStates).some(s => s)}
+          className="bg-secondary hover:bg-secondary-focus text-white font-bold py-2 px-4 rounded-lg shadow-md flex items-center transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
-          <SaveButtonContent />
+          <Save size={18} className="mr-2"/>
+          {isDirty ? 'Salvar Resultados' : 'Resultados Salvos'}
         </button>
       </div>
 

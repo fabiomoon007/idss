@@ -13,7 +13,7 @@ import {
 import { idssReducer } from './state/idssReducer';
 import { INITIAL_INDICATORS } from './data/initialIndicators';
 import { CURRENT_YEAR } from './constants';
-import { getGeminiAnalysis } from './services';
+import { getGeminiAnalysis } from './services/geminiService';
 import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from './components';
 import { FileText, Database, Users, ArrowLeft, Loader2, Save, AlertTriangle } from 'lucide-react';
 
@@ -209,11 +209,9 @@ export const App: React.FC = () => {
     <div className="min-h-screen p-4 sm:p-8">
       <header className="mb-8 p-6 bg-base-200 shadow-xl rounded-xl">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center">
-             <div className="ml-4">
-                <h1 className="text-4xl font-bold text-primary font-serif">Radar IDSS</h1>
-                <p className="text-xs text-gray-600 mt-1">desenvolvido por Fábio Guimarães no Google AI Studio</p>
-             </div>
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl font-bold text-primary font-serif">Radar IDSS</h1>
+            <p className="text-xs text-gray-600 mt-1">desenvolvido por Fábio Guimarães no Google AI Studio</p>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
             <div className="w-full sm:w-auto">
@@ -234,15 +232,17 @@ export const App: React.FC = () => {
                 {years.map((year: number) => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>
-             <div className="w-full sm:w-auto self-end pt-5">
+             <div className="w-full sm:w-auto self-end pt-5 relative group">
                 <button 
                   onClick={() => setCurrentView('historicalDataManagement')}
                   className="w-full bg-blue-800 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  title="Gerenciamento de dados desabilitado nesta versão de visualização."
                   disabled
                 >
                   <Database size={16} className="mr-2" /> Gerenciar Dados
                 </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-gray-700 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Gerenciamento de dados desabilitado nesta versão de visualização.
+                </div>
             </div>
           </div>
         </div>
