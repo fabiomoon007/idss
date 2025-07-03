@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { IDSS, AnalysisType, IDSSDimensionName, Dimension } from '@/types';
 import { BarChart as BarChartIcon, Brain, ListChecks, X, AlertCircle, TrendingUp } from 'lucide-react';
@@ -8,14 +7,14 @@ interface DashboardHeaderProps {
   activeReferenceYear: number;
   loadingStates: Record<string, boolean>;
   onTriggerAnalysis: (analysisType: AnalysisType, relatedData?: Dimension) => void;
-  onCloseAnalysis: (type: 'idss' | 'overall_indicators' | 'executive_report', dimensionId?: IDSSDimensionName) => void;
+  onCloseAnalysis: (type: 'idss' | 'overall_indicators') => void;
 }
 
 const getScoreColor = (score: number | null): string => {
   if (score === null) return 'text-gray-500';
-  if (score >= 0.7) return 'text-success';
-  if (score >= 0.4) return 'text-warning';
-  return 'text-error';
+  if (score >= 0.7) return 'text-green-600';
+  if (score >= 0.4) return 'text-yellow-600';
+  return 'text-red-600';
 };
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -32,13 +31,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <h2 className="text-2xl font-bold text-primary flex items-center">
             <BarChartIcon className="mr-3 text-secondary" /> Painel IDSS Geral ({activeReferenceYear})
           </h2>
-          {idssData.notaFinalCalculada !== null ? (
+          {idssData.notaFinalCalculada !== null && (
             <p className={`text-3xl font-bold mt-1 ${getScoreColor(idssData.notaFinalCalculada)}`}>
               Nota Simulada: {idssData.notaFinalCalculada.toFixed(3)}
-            </p>
-          ) : (
-             <p className={`text-3xl font-bold mt-1 text-gray-400`}>
-              Nota Simulada: N/A
             </p>
           )}
         </div>
@@ -46,7 +41,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <button
             onClick={() => onTriggerAnalysis('idss')}
             disabled={loadingStates.idss}
-            className="w-full sm:w-auto bg-secondary hover:bg-secondary-focus text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm disabled:opacity-60"
+            className="w-full sm:w-auto bg-secondary hover:bg-secondary-focus text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm"
             aria-label="Gerar análise estratégica para o IDSS Geral"
           >
             <Brain size={16} className="mr-2" />
@@ -55,11 +50,11 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <button
             onClick={() => onTriggerAnalysis('overall_indicators')}
             disabled={loadingStates.overall_indicators}
-            className="w-full sm:w-auto bg-accent hover:bg-accent-focus text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm disabled:opacity-60"
+            className="w-full sm:w-auto bg-accent hover:bg-accent-focus text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm"
             aria-label="Gerar análise consolidada de todos os indicadores"
           >
             <ListChecks size={16} className="mr-2" />
-            {loadingStates.overall_indicators ? 'Analisando...' : 'Análise Consolidada'}
+            {loadingStates.overall_indicators ? 'Analisando...' : 'Análise Consolidada Indicadores'}
           </button>
         </div>
       </div>
@@ -73,12 +68,12 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           >
             <X size={16} />
           </button>
-          <h4 className="font-semibold text-success mb-1">Análise Estratégica IDSS:</h4>
-          <pre className="text-sm text-green-800 whitespace-pre-wrap font-sans">{idssData.analysis}</pre>
+          <h4 className="font-semibold text-green-800 mb-1">Análise Estratégica IDSS:</h4>
+          <pre className="text-sm text-green-700 whitespace-pre-wrap font-sans">{idssData.analysis}</pre>
         </div>
       )}
       {idssData.error && (
-        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-error flex items-center shadow">
+        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700 flex items-center shadow">
           <AlertCircle size={18} className="mr-2 flex-shrink-0" /> {idssData.error}
         </div>
       )}
@@ -97,7 +92,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </div>
       )}
       {idssData.overallIndicatorError && (
-        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-error flex items-center shadow">
+        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700 flex items-center shadow">
           <AlertCircle size={18} className="mr-2 flex-shrink-0" /> {idssData.overallIndicatorError}
         </div>
       )}
@@ -105,15 +100,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       {idssData.historicalIdssScores && idssData.historicalIdssScores.length > 0 && (
         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg shadow">
           <h4 className="text-md font-semibold text-blue-800 mb-2 flex items-center">
-            <TrendingUp size={18} className="mr-2" /> Histórico de Pontuações IDSS (Oficial)
+            <TrendingUp size={18} className="mr-2" /> Histórico de Pontuações IDSS (Unimed Resende Oficial)
           </h4>
           <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
             {idssData.historicalIdssScores
-              .filter(s => s.score !== null)
               .sort((a, b) => b.programYear - a.programYear)
               .map(score => (
                 <li key={`${score.programYear}-${score.baseYear}`}>
-                  IDSS {score.programYear} (Base {score.baseYear}): <span className="font-bold">{score.score!.toFixed(4)}</span>
+                  IDSS {score.programYear} (Base {score.baseYear}): <span className="font-bold">{score.score !== null ? score.score.toFixed(4) : 'N/P'}</span>
                 </li>
               ))}
           </ul>

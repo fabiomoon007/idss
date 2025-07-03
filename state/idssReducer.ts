@@ -1,5 +1,4 @@
-
-import { IDSS, IdssAction, Dimension, Indicator, IndicatorResult, HistoricalDataArchive, OperatorSize } from '../src/types';
+import { IDSS, IdssAction, Dimension, Indicator, IndicatorResult, HistoricalDataArchive, OperatorSize } from '@/types';
 
 const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize: string): IDSS => {
     let finalIdssScore = 0;

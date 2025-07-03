@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Dimension, IDSSDimensionName, Indicator, AnalysisType } from '../src/types';
+import { Dimension, IDSSDimensionName, Indicator, AnalysisType } from '@/types';
 import { Zap, CheckSquare, DollarSign, Activity, ListChecks, Brain, X, AlertCircle, Eye } from 'lucide-react';
 
 interface DimensionsGridProps {
@@ -106,7 +105,7 @@ export const DimensionsGrid: React.FC<DimensionsGridProps> = ({
                 return (
                   <li key={ind.id} className="flex justify-between items-center py-0.5">
                     <span className="text-gray-700 flex-1 pr-2 truncate" title={ind.name}>
-                      {ind.id} - {ind.name}
+                      {ind.id} - {ind.simpleName}
                     </span>
                     <span className={`font-semibold px-1.5 py-0.5 rounded-full text-xs ${resultForYear && resultForYear.notaFinal !== null ? getScoreColor(resultForYear.notaFinal) : 'text-gray-400'}`}>
                       {resultForYear && resultForYear.notaFinal !== null ? resultForYear.notaFinal.toFixed(3) : 'N/P'}

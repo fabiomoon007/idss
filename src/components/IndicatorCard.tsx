@@ -1,11 +1,10 @@
-
 import React, { useState, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
-import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '../src/types';
+import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '@/types';
 import { ChartComponent, PeriodicChartDataPoint } from './ChartComponent'; 
 import { IndicatorWeightBar } from './IndicatorWeightBar';
 import { IndicatorAnalysisSection } from './IndicatorAnalysisSection';
-import { getPeriodLabels } from '../constants';
-import { getGeminiAnalysis } from '../services/geminiService';
+import { getPeriodLabels } from '@/constants';
+import { getGeminiAnalysis } from '@/services/geminiService';
 import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info } from 'lucide-react';
 
 interface IndicatorCardProps {
@@ -77,6 +76,12 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     return { localConsolidatedValue: cv, localNotaFinal: nf };
   }, [activeYearPeriodicInput, consolidateValues, indicator.calcularNotaFinalFn, indicator.requiresAuxValue, indicator.parametersByPorte, operatorSize]);
 
+
+  const handlePeriodicityChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const newPeriodicity = e.target.value as Periodicity;
+    setCurrentPeriodicity(newPeriodicity);
+    setIsDirty(true);
+  };
 
   const handlePeriodicInputChange = (index: number, field: 'value' | 'auxValue', inputValue: string) => {
     const numericValue = inputValue === '' ? null : parseFloat(inputValue.replace(',', '.'));
@@ -215,15 +220,17 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
   return (
     <div className="bg-base-200 shadow-lg rounded-xl p-6 mb-6 transition-all duration-300 hover:shadow-xl flex flex-col h-full">
       <h3 className="text-xl font-semibold text-primary mb-1">{indicator.id} - {indicator.name}</h3>
+      <p className="text-sm text-gray-700 mb-1"><span className="font-medium">Nome Simplificado:</span> {indicator.simpleName}</p>
       {indicator.responsibleSector && <p className="text-sm text-gray-700 mb-1"><span className="font-medium">Setor Responsável:</span> {indicator.responsibleSector}</p>}
       <p className="text-xs text-gray-500 my-2 flex items-start"><Info size={16} className="text-blue-500 mr-2 flex-shrink-0 mt-0.5" /><span className="font-medium text-gray-700 mr-1">Meta:</span> {indicator.targetDescription}</p>
       {indicator.targetDirection !== 'none' && <p className="text-sm text-gray-700 mb-2 flex items-center"><span className="font-medium">Direção da Meta:</span>{renderTargetDirectionIcon()}</p>}
       {indicator.idssWeightLevel && <IndicatorWeightBar level={indicator.idssWeightLevel} />}
       
       <div className="my-4">
-        <p className="block text-sm text-gray-700 mb-1">
-          <span className="font-medium">Periodicidade ({activeReferenceYear}):</span> {currentPeriodicity}
-        </p>
+        <label htmlFor={`periodicity-${baseId}`} className="block text-sm font-medium text-gray-700 mb-1">Periodicidade ({activeReferenceYear}):</label>
+        <select id={`periodicity-${baseId}`} value={currentPeriodicity} onChange={handlePeriodicityChange} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm rounded-md shadow-sm">
+          {indicator.periodicityOptions.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
       </div>
 
       <div className="space-y-2 mb-4 flex-grow overflow-y-auto pr-2 max-h-60">
