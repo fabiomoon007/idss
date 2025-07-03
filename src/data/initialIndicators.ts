@@ -1,5 +1,4 @@
-
-import { Indicator, IDSSDimensionName, Periodicity, IDSSIndicatorWeightLevel, OperatorSize } from '@/types';
+import { Indicator, IDSSDimensionName, Periodicity, IDSSIndicatorWeightLevel, OperatorSize } from '../types';
 import {
     averageConsolidation,
     calcularNotaFinalParametrizadaDecrescente,
@@ -23,7 +22,7 @@ import {
     calcularNotaFinalQualidadeCadastralSIB,
     calcularNotaFinalRazaoCompletudeTISS,
     calcularNotaFinalDiagnosticosInespecificos
-} from '@/constants';
+} from '../constants';
 
 export const INITIAL_INDICATORS: Indicator[] = [
     // --- IDQS Indicators ---

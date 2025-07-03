@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Dimension, IDSSDimensionName, Indicator, AnalysisType } from '@/types';
+import { Dimension, IDSSDimensionName, Indicator, AnalysisType, IndicatorResult } from '../types';
 import { Zap, CheckSquare, DollarSign, Activity, ListChecks, Brain, X, AlertCircle, Eye } from 'lucide-react';
 
 interface DimensionsGridProps {
@@ -101,7 +102,7 @@ export const DimensionsGrid: React.FC<DimensionsGridProps> = ({
             </div>
             <ul className="space-y-1 text-xs">
               {dim.indicators.map((ind: Indicator) => {
-                const resultForYear = ind.results.find(r => r.year === activeReferenceYear);
+                const resultForYear = ind.results.find((r: IndicatorResult) => r.year === activeReferenceYear);
                 return (
                   <li key={ind.id} className="flex justify-between items-center py-0.5">
                     <span className="text-gray-700 flex-1 pr-2 truncate" title={ind.name}>

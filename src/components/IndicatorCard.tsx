@@ -1,10 +1,11 @@
+
 import React, { useState, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
-import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '@/types';
+import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '../types';
 import { ChartComponent, PeriodicChartDataPoint } from './ChartComponent'; 
 import { IndicatorWeightBar } from './IndicatorWeightBar';
 import { IndicatorAnalysisSection } from './IndicatorAnalysisSection';
-import { getPeriodLabels } from '@/constants';
-import { getGeminiAnalysis } from '@/services/geminiService';
+import { getPeriodLabels } from '../constants';
+import { getGeminiAnalysis } from '../services/geminiService';
 import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info } from 'lucide-react';
 
 interface IndicatorCardProps {
@@ -35,7 +36,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     
     if (existingResult && Array.isArray(existingResult.periodicData) && existingResult.periodicData.length > 0) {
       return periodLabels.map(label => {
-        const foundEntry = existingResult.periodicData.find(pd => pd.periodLabel === label);
+        const foundEntry = existingResult.periodicData.find((pd: PeriodicEntry) => pd.periodLabel === label);
         return foundEntry || { periodLabel: label, value: null, auxValue: null };
       });
     }
@@ -58,14 +59,14 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
 
   const consolidateValues = useCallback((data: PeriodicEntry[], field: 'value' | 'auxValue' = 'value'): number | null => {
     if (!data) return null;
-    const values = data.map((entry: PeriodicEntry) => field === 'value' ? entry.value : entry.auxValue).filter(v => v !== null) as number[];
+    const values = data.map((entry: PeriodicEntry) => field === 'value' ? entry.value : entry.auxValue).filter((v): v is number => v !== null && v !== undefined) as number[];
     if (values.length === 0) return null;
 
     if(indicator.valueConsolidationFn){
       return indicator.valueConsolidationFn(values);
     }
     // Default: average
-    const sum = values.reduce((s, v) => s + v, 0);
+    const sum = values.reduce((s: number, v: number) => s + v, 0);
     return parseFloat((sum / values.length).toFixed(4));
   }, [indicator.valueConsolidationFn]);
 
@@ -75,7 +76,6 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     const nf = indicator.calcularNotaFinalFn(cv, cAv, operatorSize, indicator.parametersByPorte);
     return { localConsolidatedValue: cv, localNotaFinal: nf };
   }, [activeYearPeriodicInput, consolidateValues, indicator.calcularNotaFinalFn, indicator.requiresAuxValue, indicator.parametersByPorte, operatorSize]);
-
 
   const handlePeriodicityChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const newPeriodicity = e.target.value as Periodicity;
@@ -112,7 +112,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     });
     
     // Ensure result for the year exists
-    if (!updatedResults.find(r => r.year === activeReferenceYear)) {
+    if (!updatedResults.find((r: IndicatorResult) => r.year === activeReferenceYear)) {
       updatedResults.push({
         year: activeReferenceYear,
         periodicData: [...activeYearPeriodicInput],
@@ -123,7 +123,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
       } as IndicatorResult);
     }
 
-    onUpdateIndicator({ ...indicator, currentPeriodicity, results: updatedResults.sort((a, b) => a.year - b.year) });
+    onUpdateIndicator({ ...indicator, currentPeriodicity, results: updatedResults.sort((a: IndicatorResult, b: IndicatorResult) => a.year - b.year) });
     setIsDirty(false);
   }, [isDirty, activeYearPeriodicInput, indicator, operatorSize, onUpdateIndicator, activeReferenceYear, currentPeriodicity, consolidateValues, localConsolidatedValue, localNotaFinal]);
 
@@ -140,12 +140,12 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     };
     
     const updateError = (message: string) => {
-       onUpdateIndicator({...indicator, results: indicator.results.map(r => r.year === activeReferenceYear ? {...r, [errorField]: message} : r)});
+       onUpdateIndicator({...indicator, results: indicator.results.map((r: IndicatorResult) => r.year === activeReferenceYear ? {...r, [errorField]: message} : r)});
        setAnalysisLoadingStates(prev => ({...prev, [analysisType]: false}));
     }
 
     if (analysisType === 'lastPeriod') {
-      const lastFilledEntry = [...activeYearPeriodicInput].reverse().find(p => p.value !== null);
+      const lastFilledEntry = [...activeYearPeriodicInput].reverse().find((p: PeriodicEntry) => p.value !== null);
       if (!lastFilledEntry || lastFilledEntry.value === null) { return updateError("Nenhum valor preenchido no período atual para análise."); }
       requestData.currentValue = lastFilledEntry.value;
       requestData.currentPeriodLabel = lastFilledEntry.periodLabel;
@@ -157,7 +157,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
         requestData.notaFinal = localNotaFinal;
         geminiRequestType = 'indicator_yearly_consolidated';
       } else { // yearlyComparison
-        const previousYearResult = indicator.results.find(r => r.year === activeReferenceYear - 1);
+        const previousYearResult = indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear - 1);
         requestData.previousYearValue = previousYearResult?.consolidatedValue ?? null;
         geminiRequestType = 'indicator_yearly_comparison';
       }
@@ -167,7 +167,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     try {
       const analysisText = await getGeminiAnalysis(finalRequest);
       const analysisField = `analysis${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}` as keyof IndicatorResult;
-      onUpdateIndicator({...indicator, results: indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: analysisText, [errorField]: undefined } : r)});
+      onUpdateIndicator({...indicator, results: indicator.results.map((r: IndicatorResult) => r.year === activeReferenceYear ? { ...r, [analysisField]: analysisText, [errorField]: undefined } : r)});
     } catch (e: any) {
       updateError(e.message || `Erro na análise (${analysisType})`);
     } finally {
@@ -178,12 +178,12 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
   const handleCloseAnalysis = (analysisTypeToClose: LocalAnalysisType) => {
     const analysisField = `analysis${analysisTypeToClose.charAt(0).toUpperCase() + analysisTypeToClose.slice(1)}` as keyof IndicatorResult;
     const errorField = `error${analysisTypeToClose.charAt(0).toUpperCase() + analysisTypeToClose.slice(1)}` as keyof IndicatorResult;
-    onUpdateIndicator({...indicator, results: indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: undefined, [errorField]: undefined } : r)});
+    onUpdateIndicator({...indicator, results: indicator.results.map((r: IndicatorResult) => r.year === activeReferenceYear ? { ...r, [analysisField]: undefined, [errorField]: undefined } : r)});
   };
 
   const activeYearDisplayResult = indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear);
   const isAnyAnalysisButtonDisabled = localConsolidatedValue === null;
-  const hasAnyPeriodicValueForActiveYear = activeYearPeriodicInput.some(p => p.value !== null);
+  const hasAnyPeriodicValueForActiveYear = activeYearPeriodicInput.some((p: PeriodicEntry) => p.value !== null);
   
   const renderTargetDirectionIcon = () => {
     if (indicator.targetDirection === 'up') return <ArrowUpCircle size={18} className="text-black inline-block ml-1" aria-label="Meta é subir" />;
@@ -202,11 +202,11 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
 
   const periodicChartData: PeriodicChartDataPoint[] = useMemo(() => {
      return activeYearPeriodicInput
-      .filter(entry => entry.value !== null)
-      .map(entry => {
+      .filter((entry: PeriodicEntry): entry is PeriodicEntry & { value: number } => entry.value !== null)
+      .map((entry: PeriodicEntry & { value: number }) => {
         const notaFinalForPeriod = indicator.calcularNotaFinalFn(entry.value, entry.auxValue, operatorSize, indicator.parametersByPorte);
         const fillColor = getBarColorForPeriodicNotaFinal(notaFinalForPeriod);
-        return { periodLabel: entry.periodLabel, value: entry.value!, fillColor };
+        return { periodLabel: entry.periodLabel, value: entry.value, fillColor };
       });
   }, [activeYearPeriodicInput, indicator.calcularNotaFinalFn, operatorSize, indicator.parametersByPorte]);
   

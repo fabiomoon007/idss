@@ -9,9 +9,9 @@ import {
   Dimension,
   Periodicity, 
   HistoricalDataAction
-} from '@/types';
-import { getPeriodLabels, CURRENT_YEAR as APP_CURRENT_YEAR } from '@/constants';
-import { historicalDataReducer } from '@/state/historicalDataReducer';
+} from '../types';
+import { getPeriodLabels, CURRENT_YEAR as APP_CURRENT_YEAR } from '../constants';
+import { historicalDataReducer } from '../state/historicalDataReducer';
 import { ArrowLeft, Save, AlertTriangle, CheckCircle, Download } from 'lucide-react';
 
 interface HistoricalDataManagementPageProps {
