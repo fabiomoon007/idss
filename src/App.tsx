@@ -94,6 +94,7 @@ export const App: React.FC = () => {
 
   const handleUpdateIndicator = (updatedIndicator: Indicator) => {
     dispatch({ type: 'UPDATE_INDICATOR', payload: updatedIndicator });
+    // Recalculation is now triggered by the state change in the main useEffect
   };
   
   const handleTriggerAnalysis = async (analysisType: AnalysisType, relatedData?: Dimension) => {

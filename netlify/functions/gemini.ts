@@ -53,6 +53,7 @@ const buildDimensionPrompt = (data: Dimension | undefined, year: number | undefi
     if (!data) return "Dados da dimensão ausentes.";
     
     const indicatorLines = data.indicators
+        .sort((a,b) => parseFloat(a.id) - parseFloat(b.id))
         .map(ind => {
           const result = ind.results.find(r => r.year === year);
           return `- ${ind.simpleName}: Nota ${formatNumber(result?.notaFinal)}`
@@ -166,7 +167,8 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({ analysis: analysisText }),
     };
 
-  } catch (error: any) {
+  } catch (error: any)
+{
     console.error("Error in Gemini function:", error);
     return {
       statusCode: 500,
