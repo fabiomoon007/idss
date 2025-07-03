@@ -1,3 +1,4 @@
+
 import { HistoricalDataArchive, HistoricalDataAction, Periodicity, HistoricalPeriodicEntry, Indicator } from '../types';
 import { getPeriodLabels } from '../constants';
 
@@ -14,102 +15,75 @@ export const historicalDataReducer = (state: HistoricalDataArchive, action: Hist
 
         case 'ENSURE_YEAR_DATA_EXISTS': {
             const { year, initialIndicators } = action.payload;
-            let newState = { ...state };
+            let newState = JSON.parse(JSON.stringify(state)); // Deep copy to ensure no mutation
             let needsUpdate = false;
 
-            const updatedIndicatorData = [...state.indicatorHistoricalData];
-
-            initialIndicators.forEach(initInd => {
-                let indRecordIndex = updatedIndicatorData.findIndex(ir => ir.id === initInd.id);
-                let indRecord = indRecordIndex !== -1 ? { ...updatedIndicatorData[indRecordIndex] } : null;
+            initialIndicators.forEach((initInd: Indicator) => {
+                let indRecord = newState.indicatorHistoricalData.find((ir: any) => ir.id === initInd.id);
 
                 if (!indRecord) {
                     indRecord = { id: initInd.id, results: [] };
-                    indRecordIndex = updatedIndicatorData.push(indRecord) - 1;
-                    needsUpdate = true;
+                    newState.indicatorHistoricalData.push(indRecord);
                 }
 
-                let yearEntry = indRecord.results.find(r => r.year === year);
+                let yearEntry = indRecord.results.find((r: any) => r.year === year);
                 if (!yearEntry) {
-                    const newYearEntry = {
+                    indRecord.results.push({
                         year: year,
                         notaFinal: null,
                         consolidatedValue: null,
                         consolidatedAuxValue: null,
                         periodicityUsed: null,
                         periodicData: null
-                    };
-                    const newResults = [...indRecord.results, newYearEntry].sort((a, b) => b.year - a.year);
-                    updatedIndicatorData[indRecordIndex] = { ...indRecord, results: newResults };
+                    });
+                    indRecord.results.sort((a: any, b: any) => b.year - a.year);
                     needsUpdate = true;
                 }
             });
             
-            // Ensure dimension data for the year exists
-            let dimRecord = newState.dimensionHistoricalData.find(d => d.year === year);
-            if (!dimRecord) {
+            if (!newState.dimensionHistoricalData.some((d: any) => d.year === year)) {
                 newState.dimensionHistoricalData.push({ year, dimensionScores: {} });
-                newState.dimensionHistoricalData.sort((a,b) => b.year - a.year);
+                newState.dimensionHistoricalData.sort((a: any, b: any) => b.year - a.year);
                 needsUpdate = true;
             }
             
-            // Ensure IDSS score data for the year exists
-            let idssRecord = newState.idssHistoricalScores.find(s => s.baseYear === year);
-            if(!idssRecord) {
+            if (!newState.idssHistoricalScores.some((s: any) => s.baseYear === year)) {
                  newState.idssHistoricalScores.push({ programYear: year + 1, baseYear: year, score: null, source: "Unimed Resende (Input)" });
-                 newState.idssHistoricalScores.sort((a,b) => b.baseYear - a.baseYear);
+                 newState.idssHistoricalScores.sort((a: any, b: any) => b.baseYear - a.year);
                  needsUpdate = true;
             }
 
-
-            if (needsUpdate) {
-                return { ...newState, indicatorHistoricalData: updatedIndicatorData };
-            }
-            return state; // No changes needed
+            return needsUpdate ? newState : state;
         }
 
         case 'UPDATE_IDSS_SCORE': {
             const { year, score } = action.payload;
             const existingIndex = state.idssHistoricalScores.findIndex(s => s.baseYear === year);
+            let newScores = [...state.idssHistoricalScores];
             
             if (existingIndex > -1) {
-                return {
-                    ...state,
-                    idssHistoricalScores: state.idssHistoricalScores.map((s, index) => 
-                        index === existingIndex ? { ...s, score } : s
-                    )
-                };
+                newScores[existingIndex] = {...newScores[existingIndex], score};
             } else {
-                const newScores = [
-                    ...state.idssHistoricalScores,
-                    { programYear: year + 1, baseYear: year, score, source: "Unimed Resende (Input)" }
-                ].sort((a, b) => b.baseYear - a.baseYear);
-                return { ...state, idssHistoricalScores: newScores };
+                newScores.push({ programYear: year + 1, baseYear: year, score, source: "Unimed Resende (Input)" });
+                newScores.sort((a, b) => b.baseYear - a.baseYear);
             }
+            return { ...state, idssHistoricalScores: newScores };
         }
 
         case 'UPDATE_DIMENSION_SCORE': {
             const { year, dimensionId, score } = action.payload;
             const existingIndex = state.dimensionHistoricalData.findIndex(d => d.year === year);
-            
+            let newDimData = [...state.dimensionHistoricalData];
+
             if (existingIndex > -1) {
-                return {
-                    ...state,
-                    dimensionHistoricalData: state.dimensionHistoricalData.map((d, index) => {
-                        if (index !== existingIndex) return d;
-                        return {
-                            ...d,
-                            dimensionScores: { ...d.dimensionScores, [dimensionId]: score }
-                        };
-                    })
-                };
+                const updatedEntry = {...newDimData[existingIndex]};
+                updatedEntry.dimensionScores = {...updatedEntry.dimensionScores, [dimensionId]: score};
+                newDimData[existingIndex] = updatedEntry;
             } else {
-                const newDimData = [
-                    ...state.dimensionHistoricalData,
-                    { year: year, dimensionScores: { [dimensionId]: score } }
-                ].sort((a, b) => b.year - a.year);
-                return { ...state, dimensionHistoricalData: newDimData };
+                newDimData.push({ year: year, dimensionScores: { [dimensionId]: score } });
+                newDimData.sort((a, b) => b.year - a.year);
             }
+            return { ...state, dimensionHistoricalData: newDimData };
         }
         
         case 'UPDATE_INDICATOR_FIELD': {
@@ -119,20 +93,19 @@ export const historicalDataReducer = (state: HistoricalDataArchive, action: Hist
                 indicatorHistoricalData: state.indicatorHistoricalData.map(indRecord => {
                     if (indRecord.id !== indicatorId) return indRecord;
                     
-                    const resIndex = indRecord.results.findIndex(r => r.year === year);
+                    const newResults = [...indRecord.results];
+                    const resIndex = newResults.findIndex(r => r.year === year);
+
                     if (resIndex > -1) {
-                        return {
-                            ...indRecord,
-                            results: indRecord.results.map((r, index) => 
-                                index === resIndex ? { ...r, [field]: value } : r
-                            )
-                        };
+                        const updatedRes = {...newResults[resIndex], [field]: value};
+                        newResults[resIndex] = updatedRes;
                     } else {
                         const newEntry: any = { year, notaFinal: null, consolidatedValue: null, consolidatedAuxValue: null, periodicityUsed: null, periodicData: null };
                         newEntry[field] = value;
-                        const newResults = [...indRecord.results, newEntry].sort((a, b) => b.year - a.year);
-                        return { ...indRecord, results: newResults };
+                        newResults.push(newEntry);
+                        newResults.sort((a, b) => b.year - a.year);
                     }
+                    return { ...indRecord, results: newResults };
                 })
             };
         }
@@ -170,12 +143,12 @@ export const historicalDataReducer = (state: HistoricalDataArchive, action: Hist
                         results: indRecord.results.map(res => {
                             if (res.year !== year || !res.periodicData) return res;
                             
-                            return {
-                                ...res,
-                                periodicData: res.periodicData.map((pd, index) => 
-                                    index === periodIndex ? { ...pd, [field]: value } : pd
-                                )
-                            };
+                            const newPeriodicData = [...res.periodicData];
+                            if(newPeriodicData[periodIndex]){
+                                newPeriodicData[periodIndex] = {...newPeriodicData[periodIndex], [field]: value};
+                            }
+
+                            return { ...res, periodicData: newPeriodicData };
                         })
                     };
                 })

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useReducer, ChangeEvent } from 'react';
 import { 
   HistoricalDataArchive, 
@@ -7,7 +8,7 @@ import {
   Periodicity, 
   HistoricalDataAction
 } from '../types';
-import { getPeriodLabels, CURRENT_YEAR as APP_CURRENT_YEAR } from '../constants';
+import { CURRENT_YEAR as APP_CURRENT_YEAR } from '../constants';
 import { historicalDataReducer } from '../state/historicalDataReducer';
 import { ArrowLeft, AlertTriangle, CheckCircle, Download, Loader2 } from 'lucide-react';
 
@@ -16,7 +17,6 @@ interface HistoricalDataManagementPageProps {
   initialIndicators: Indicator[];
   allDimensions: Dimension[];
   currentHistoricalData: HistoricalDataArchive;
-  onHistoricalDataUpdated: () => Promise<void>;
 }
 
 const parseNumericInput = (value: string): number | null => {
@@ -33,8 +33,8 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
 }) => {
   const [formData, dispatch] = useReducer(historicalDataReducer, currentHistoricalData);
   const [selectedYear, setSelectedYear] = useState<number>(APP_CURRENT_YEAR - 1);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [saveStatus, setSaveStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   
   const yearsOptions = Array.from({ length: 20 }, (_, i) => APP_CURRENT_YEAR - i);
 
@@ -47,37 +47,32 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
   }, [selectedYear, initialIndicators]);
 
   const handleIdssScoreChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const score = parseNumericInput(e.target.value);
-    dispatch({ type: 'UPDATE_IDSS_SCORE', payload: { year: selectedYear, score } });
+    dispatch({ type: 'UPDATE_IDSS_SCORE', payload: { year: selectedYear, score: parseNumericInput(e.target.value) } });
   };
 
   const handleDimensionScoreChange = (dimId: IDSSDimensionName, e: ChangeEvent<HTMLInputElement>) => {
-      const score = parseNumericInput(e.target.value);
-      dispatch({ type: 'UPDATE_DIMENSION_SCORE', payload: { year: selectedYear, dimensionId: dimId, score } });
+      dispatch({ type: 'UPDATE_DIMENSION_SCORE', payload: { year: selectedYear, dimensionId: dimId, score: parseNumericInput(e.target.value) } });
   };
 
   const handleIndicatorFieldChange = (indicatorId: string, field: 'notaFinal' | 'consolidatedValue' | 'consolidatedAuxValue', e: ChangeEvent<HTMLInputElement>) => {
-      const value = parseNumericInput(e.target.value);
-      dispatch({ type: 'UPDATE_INDICATOR_FIELD', payload: { year: selectedYear, indicatorId, field, value } });
+      dispatch({ type: 'UPDATE_INDICATOR_FIELD', payload: { year: selectedYear, indicatorId, field, value: parseNumericInput(e.target.value) } });
   };
   
   const handleIndicatorPeriodicityChange = (indicatorId: string, e: ChangeEvent<HTMLSelectElement>) => {
-      const periodicity = e.target.value === "" ? null : e.target.value as Periodicity;
-      dispatch({ type: 'UPDATE_INDICATOR_PERIODICITY', payload: { year: selectedYear, indicatorId, periodicity } });
+      dispatch({ type: 'UPDATE_INDICATOR_PERIODICITY', payload: { year: selectedYear, indicatorId, periodicity: e.target.value as Periodicity | null } });
   };
 
   const handlePeriodicDataChange = (indicatorId: string, periodIndex: number, field: 'value' | 'auxValue', e: ChangeEvent<HTMLInputElement>) => {
-      const value = parseNumericInput(e.target.value);
-      dispatch({ type: 'UPDATE_PERIODIC_DATA', payload: { year: selectedYear, indicatorId, periodIndex, field, value } });
+      dispatch({ type: 'UPDATE_PERIODIC_DATA', payload: { year: selectedYear, indicatorId, periodIndex, field, value: parseNumericInput(e.target.value) } });
   };
 
   const handleGenerateAndDownload = () => {
     if (!formData) {
-        setSaveStatus({ message: "Nenhum dado para salvar.", type: 'error' });
+        setStatus({ message: "Nenhum dado para salvar.", type: 'error' });
         return;
     }
-    setIsLoading(true);
-    setSaveStatus(null);
+    setIsGenerating(true);
+    setStatus(null);
     try {
       const fileData = JSON.stringify(formData, null, 2);
       const blob = new Blob([fileData], { type: "application/json" });
@@ -90,14 +85,14 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      setSaveStatus({
+      setStatus({
         message: 'Arquivo "historical_data.json" gerado! Para aplicar, substitua o arquivo na pasta `public` do projeto e reinicie o servidor de desenvolvimento.',
         type: 'info'
       });
     } catch (error: any) {
-      setSaveStatus({ message: `Erro ao gerar arquivo: ${error.message || 'Erro desconhecido'}`, type: 'error' });
+      setStatus({ message: `Erro ao gerar arquivo: ${error.message || 'Erro desconhecido'}`, type: 'error' });
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
@@ -133,7 +128,7 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
           id="historical-year-select"
           value={selectedYear}
           onChange={(e) => {
-            setSaveStatus(null); 
+            setStatus(null); 
             setSelectedYear(parseInt(e.target.value));
           }}
           className="mt-1 block w-full sm:w-1/3 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm rounded-md shadow-sm"
@@ -220,11 +215,11 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
                       </div>
                     )}
                     <div className="md:col-span-2 lg:col-span-1">
-                      <label className="block text-xs font-medium text-gray-600">Periodicidade Usada em {selectedYear}</label>
+                      <label className="block text-xs font-medium text-gray-600">Periodicidade Usada</label>
                       <select value={yearEntry.periodicityUsed ?? ''} 
                               onChange={(e) => handleIndicatorPeriodicityChange(indicator.id, e)}
                               className="mt-0.5 w-full text-xs p-1.5 border-gray-300 rounded-md shadow-sm">
-                        <option value="">Não Registrar Periodicidade</option>
+                        <option value="">Não Registrar</option>
                         {Object.values(Periodicity).map(p => <option key={p} value={p}>{p}</option>)}
                       </select>
                     </div>
@@ -232,7 +227,7 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
 
                   {(yearEntry.periodicityUsed && yearEntry.periodicData) && (
                     <div className="mt-3 pt-3 border-t border-gray-200">
-                      <h5 className="text-sm font-medium text-gray-700 mb-1.5">Dados Periódicos ({yearEntry.periodicityUsed}, {selectedYear})</h5>
+                      <h5 className="text-sm font-medium text-gray-700 mb-1.5">Dados Periódicos ({yearEntry.periodicityUsed})</h5>
                       <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-${indicator.requiresAuxValue ? 3 : 4} gap-x-3 gap-y-2`}>
                         {yearEntry.periodicData.map((pd, pIdx) => (
                           <div key={pd.periodLabel} className={`flex flex-col space-y-1 ${indicator.requiresAuxValue ? '' : 'sm:col-span-1'}`}>
@@ -263,22 +258,22 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
         <div className="mt-8 flex flex-col items-center">
           <button
             onClick={handleGenerateAndDownload}
-            disabled={isLoading}
+            disabled={isGenerating}
             className="w-full sm:w-auto bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2.5 px-6 rounded-md shadow-md transition duration-150 ease-in-out disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            {isLoading ? <Loader2 size={18} className="mr-2 animate-spin"/> : <Download size={18} className="mr-2" />}
-            {isLoading ? 'Gerando...' : `Gerar e Baixar Arquivo de Dados Históricos`}
+            {isGenerating ? <Loader2 size={18} className="mr-2 animate-spin"/> : <Download size={18} className="mr-2" />}
+            {isGenerating ? 'Gerando...' : `Gerar e Baixar Arquivo de Dados Históricos`}
           </button>
-          {saveStatus && (
+          {status && (
              <div className={`mt-3 p-2.5 rounded-md text-sm flex items-center ${
-                saveStatus.type === 'success' ? 'bg-green-50 text-success' :
-                saveStatus.type === 'info' ? 'bg-blue-50 text-blue-800' :
+                status.type === 'success' ? 'bg-green-50 text-success' :
+                status.type === 'info' ? 'bg-blue-50 text-blue-800' :
                 'bg-red-50 text-error'
             }`}>
-              {saveStatus.type === 'success' && <CheckCircle size={18} className="mr-2"/>}
-              {saveStatus.type === 'info' && <AlertTriangle size={18} className="mr-2"/>}
-              {saveStatus.type === 'error' && <AlertTriangle size={18} className="mr-2"/>}
-              <span className="text-center">{saveStatus.message}</span>
+              {status.type === 'success' && <CheckCircle size={18} className="mr-2"/>}
+              {status.type === 'info' && <AlertTriangle size={18} className="mr-2"/>}
+              {status.type === 'error' && <AlertTriangle size={18} className="mr-2"/>}
+              <span className="text-center">{status.message}</span>
             </div>
           )}
         </div>

@@ -158,6 +158,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                         ),
                     };
                 default:
+                     // Handle indicator analysis types if ever dispatched here, though they are handled in the component
                     return state;
             }
         }
@@ -198,6 +199,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                     historicalInd.results.forEach((histResult: HistoricalIndicatorYearlyEntry) => {
                         const opResultIndex = opResults.findIndex((r: IndicatorResult) => r.year === histResult.year);
                         if (opResultIndex > -1) {
+                            // Merge only if operational data is null, preserving user input
                             opResults[opResultIndex] = {
                                 ...opResults[opResultIndex],
                                 consolidatedValue: opResults[opResultIndex].consolidatedValue ?? histResult.consolidatedValue,
@@ -205,6 +207,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                                 notaFinal: opResults[opResultIndex].notaFinal ?? histResult.notaFinal
                             };
                         } else {
+                            // Add historical result as a new entry if year doesn't exist
                             opResults.push({
                                 year: histResult.year,
                                 consolidatedValue: histResult.consolidatedValue,

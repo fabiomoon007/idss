@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
@@ -32,7 +33,7 @@ export const ChartComponent: React.FC<ChartComponentProps> = ({ data, valueLabel
           <Tooltip 
             contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e0e0e0', borderRadius: '0.5rem' }}
             labelStyle={{ color: '#1f2937', fontWeight: 'bold' }}
-            formatter={(value: number, name: string) => {
+            formatter={(value: number, name: string, props: any) => {
               const formattedValue = isRate ? `${Number(value).toFixed(2)}%` : Number(value).toFixed(3);
               return [formattedValue, valueLabel];
             }}

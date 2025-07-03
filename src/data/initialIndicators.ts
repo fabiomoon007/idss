@@ -1,8 +1,8 @@
+
 import { Indicator, IDSSDimensionName, Periodicity, IDSSIndicatorWeightLevel, OperatorSize } from '../types';
 import {
     averageConsolidation,
     calcularNotaFinalParametrizadaDecrescente,
-    calcularNotaFinalParametrizadaCrescente,
     calcularNotaFinalPartoCesareo,
     calcularNotaFinalTaxaConsultaPrenatal,
     calcularNotaFinalTaxaPediatria,

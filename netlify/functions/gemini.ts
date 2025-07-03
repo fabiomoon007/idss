@@ -13,7 +13,7 @@ const getAPIKey = () => {
 
 const formatNumber = (n: number | null | undefined): string => {
     if (n === null || n === undefined || isNaN(n)) return 'N/A';
-    return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    return n.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 4 });
 };
 
 const buildIndicatorPrompt = (data: GeminiAnalysisRequest['indicatorData'], type: string): string => {
@@ -56,7 +56,7 @@ const buildDimensionPrompt = (data: Dimension | undefined, year: number | undefi
         .sort((a: Indicator, b: Indicator) => parseFloat(a.id) - parseFloat(b.id))
         .map(ind => {
           const result = ind.results.find(r => r.year === year);
-          return `- ${ind.simpleName}: Nota ${formatNumber(result?.notaFinal)}`
+          return `- ${ind.simpleName} (ID ${ind.id}): Nota ${formatNumber(result?.notaFinal)}`
         })
         .join('\n');
 
@@ -79,7 +79,7 @@ const buildIdssPrompt = (data: IDSS | undefined, year: number | undefined): stri
     
     const dimensionScores = data.dimensions
       .map(d => `${d.id}: ${formatNumber(d.notaFinalCalculada)}`)
-      .join(', ');
+      .join('; ');
 
     return `Você é um conselheiro executivo (C-level) para uma operadora de saúde. Analise o seguinte resultado simulado do IDSS (Ano Base: ${year ?? 'N/A'}).
 
@@ -87,7 +87,7 @@ Nota Final IDSS Calculada: ${formatNumber(data.notaFinalCalculada)}
 
 Notas por Dimensão: ${dimensionScores}
 
-Forneça um resumo executivo de alto nível em português do Brasil (máximo 3-4 frases), com foco em ação:
+Forneça um resumo executivo de alto nível em português do Brasil (máximo 4 frases curtas), com foco em ação:
 1. Qual a posição geral da operadora com base nesta simulação?
 2. Quais dimensões estão impulsionando a nota e quais a estão prejudicando?
 3. Quais são as 2 áreas mais críticas para foco imediato visando melhorar o próximo resultado do IDSS?`;

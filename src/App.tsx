@@ -16,7 +16,7 @@ import { INITIAL_INDICATORS } from './data/initialIndicators';
 import { CURRENT_YEAR } from './constants';
 import { getGeminiAnalysis } from './services/geminiService';
 import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from './components';
-import { FileText, Database, Users, ArrowLeft, Loader2, Save } from 'lucide-react';
+import { FileText, Database, Users, ArrowLeft, Loader2, Save, AlertTriangle } from 'lucide-react';
 
 const initializeState = (initialIndicators: Indicator[]): IDSS => {
   const dimensions: Record<IDSSDimensionName, Dimension> = {
@@ -60,27 +60,18 @@ export const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const controller = new AbortController();
-      const signal = controller.signal;
-
-      const idssPromise = fetch(`/idss_data.json?v=${new Date().getTime()}`, { signal, cache: 'no-store' });
-      const historicalPromise = fetch(`/historical_data.json?v=${new Date().getTime()}`, { signal, cache: 'no-store' });
+      const idssPromise = fetch(`/idss_data.json?v=${Date.now()}`, { cache: 'no-store' });
+      const historicalPromise = fetch(`/historical_data.json?v=${Date.now()}`, { cache: 'no-store' });
 
       const [idssResponse, historicalResponse] = await Promise.all([idssPromise, historicalPromise]);
 
       let savedIdssData: Partial<IDSS> = { dimensions: [] };
-      if (idssResponse.ok) {
-        savedIdssData = await idssResponse.json();
-      } else {
-        console.warn(`Could not load idss_data.json: ${idssResponse.statusText}. Starting with a fresh state.`);
-      }
+      if (idssResponse.ok) savedIdssData = await idssResponse.json();
+      else console.warn(`Não foi possível carregar idss_data.json. Iniciando com estado limpo.`);
       
       let historicalArchive: HistoricalDataArchive = { idssHistoricalScores: [], dimensionHistoricalData: [], indicatorHistoricalData: [] };
-      if (historicalResponse.ok) {
-        historicalArchive = await historicalResponse.json();
-      } else {
-         console.warn(`Could not load historical_data.json: ${historicalResponse.statusText}. Historical data will be empty.`);
-      }
+      if (historicalResponse.ok) historicalArchive = await historicalResponse.json();
+      else console.warn(`Não foi possível carregar historical_data.json. Dados históricos estarão vazios.`);
 
       setHistoricalData(historicalArchive);
       
@@ -88,9 +79,7 @@ export const App: React.FC = () => {
       dispatch({ type: 'MERGE_HISTORICAL_DATA', payload: { historicalArchive } });
     
     } catch (e: any) {
-       if (e.name !== 'AbortError') {
-         setError(`Erro ao carregar dados iniciais: ${e.message}. Verifique a sua conexão e se os arquivos JSON existem na pasta 'public'.`);
-       }
+       setError(`Erro ao carregar dados. Verifique sua conexão e a presença dos arquivos JSON na pasta 'public'. Detalhes: ${e.message}`);
     } finally {
       setLoading(false);
     }
@@ -101,14 +90,14 @@ export const App: React.FC = () => {
   }, [loadData]);
 
   useEffect(() => {
-    if (!loading && idssData.dimensions.length > 0) {
+    if (!loading) {
       dispatch({ type: 'CALCULATE_ALL_SCORES', payload: { activeReferenceYear, operatorSize } });
     }
-  }, [loading, activeReferenceYear, operatorSize, idssData.dimensions]);
+  }, [loading, activeReferenceYear, operatorSize, idssData.dimensions, idssData.dimensions.flatMap(d => d.indicators.flatMap(i => i.results))]);
 
-  const handleUpdateIndicator = (updatedIndicator: Indicator) => {
+  const handleUpdateIndicator = useCallback((updatedIndicator: Indicator) => {
     dispatch({ type: 'UPDATE_INDICATOR', payload: updatedIndicator });
-  };
+  }, []);
   
   const handleTriggerAnalysis = async (analysisType: AnalysisType, relatedData?: Dimension) => {
     const loadingKey = analysisType === 'dimension' && relatedData ? `${analysisType}-${relatedData.id}` : analysisType;
@@ -120,37 +109,15 @@ export const App: React.FC = () => {
         activeReferenceYear,
     };
 
-    if (analysisType === 'idss') {
-        requestPayload.idssData = idssData;
-    } else if (analysisType === 'overall_indicators') {
-        requestPayload.overallIndicatorsData = idssData.dimensions.flatMap((d: Dimension) => d.indicators);
-    } else if (analysisType === 'dimension' && relatedData) {
-        requestPayload.dimensionData = relatedData;
-    } else if (analysisType !== 'executive_report') {
-        console.error("Disparo de análise inválido: Dados ausentes para o tipo de análise.");
-        setAnalysisLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
-        return;
-    }
-
+    if (analysisType === 'idss') requestPayload.idssData = idssData;
+    else if (analysisType === 'overall_indicators') requestPayload.overallIndicatorsData = idssData.dimensions.flatMap(d => d.indicators);
+    else if (analysisType === 'dimension' && relatedData) requestPayload.dimensionData = relatedData;
+    
     try {
         const analysisText = await getGeminiAnalysis(requestPayload);
-        dispatch({
-            type: 'SET_ANALYSIS_RESULT',
-            payload: {
-                analysisType: analysisType as any,
-                analysisText,
-                dimensionId: relatedData?.id,
-            }
-        });
+        dispatch({ type: 'SET_ANALYSIS_RESULT', payload: { analysisType, analysisText, dimensionId: relatedData?.id } });
     } catch(e: any) {
-        dispatch({
-            type: 'SET_ANALYSIS_RESULT',
-            payload: {
-                analysisType: analysisType as any,
-                error: e.message,
-                dimensionId: relatedData?.id,
-            }
-        });
+        dispatch({ type: 'SET_ANALYSIS_RESULT', payload: { analysisType, error: e.message, dimensionId: relatedData?.id } });
     } finally {
         setAnalysisLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
     }
@@ -160,25 +127,22 @@ export const App: React.FC = () => {
     dispatch({ type: 'CLOSE_ANALYSIS', payload: { type, dimensionId } });
   };
   
-  const handleYearChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    setActiveReferenceYear(parseInt(event.target.value));
-  };
-  
-  const handleOperatorSizeChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    setOperatorSize(event.target.value as OperatorSize);
-  };
-  
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="text-center p-10">
+        <div className="flex flex-col justify-center items-center h-64 text-center p-10">
             <Loader2 className="animate-spin h-16 w-16 text-secondary mx-auto" />
             <p className="mt-4 text-xl text-primary">Carregando Dados...</p>
         </div>
       );
     }
     if (error) {
-      return <div className="text-center p-10 text-error bg-red-50 rounded-lg shadow-md">{error}</div>;
+      return (
+        <div className="text-center p-10 text-error bg-red-50 rounded-lg shadow-md flex items-center justify-center">
+            <AlertTriangle className="h-8 w-8 mr-4" />
+            <span>{error}</span>
+        </div>
+      );
     }
 
     if (currentView === 'historicalDataManagement' && historicalData) {
@@ -256,7 +220,7 @@ export const App: React.FC = () => {
                 <Users size={16} className="mr-2 text-gray-500" />
                 Porte da Operadora:
               </label>
-              <select id="operator-size-select" value={operatorSize} onChange={handleOperatorSizeChange} className="block w-full text-sm p-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+              <select id="operator-size-select" value={operatorSize} onChange={(e) => setOperatorSize(e.target.value as OperatorSize)} className="block w-full text-sm p-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
                 {Object.values(OperatorSize).map(size => <option key={size} value={size}>{size}</option>)}
               </select>
             </div>
@@ -265,7 +229,7 @@ export const App: React.FC = () => {
                 <Database size={16} className="mr-2 text-gray-500" />
                 Ano Base de Referência:
               </label>
-              <select id="year-select" value={activeReferenceYear} onChange={handleYearChange} className="block w-full text-sm p-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
+              <select id="year-select" value={activeReferenceYear} onChange={(e) => setActiveReferenceYear(parseInt(e.target.value))} className="block w-full text-sm p-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
                 {years.map(year => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>

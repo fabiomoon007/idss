@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
 import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '../types';
 import { ChartComponent, PeriodicChartDataPoint } from './ChartComponent'; 
 import { IndicatorWeightBar } from './IndicatorWeightBar';
 import { IndicatorAnalysisSection } from './IndicatorAnalysisSection';
-import { getPeriodLabels } from '../constants';
+import { getPeriodLabels, averageConsolidation } from '../constants';
 import { getGeminiAnalysis } from '../services/geminiService';
 import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info, Check } from 'lucide-react';
 
@@ -70,16 +69,9 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     if (indicator.valueConsolidationFn) {
       return indicator.valueConsolidationFn(values);
     }
-    // Default: first value if only one, otherwise average
     return values.length === 1 ? values[0] : averageConsolidation(values);
   }, [indicator.valueConsolidationFn]);
   
-  const averageConsolidation = (periodicValues: (number | null)[]) => {
-      const validValues = periodicValues.filter(v => v !== null) as number[];
-      if (validValues.length === 0) return null;
-      const sum = validValues.reduce((s, val) => s + val, 0);
-      return parseFloat((sum / validValues.length).toFixed(4));
-  };
 
   const { localConsolidatedValue, localNotaFinal } = useMemo(() => {
     const cv = consolidateValues(activeYearPeriodicInput, 'value');
@@ -119,7 +111,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     };
     
     const otherResults = indicator.results.filter((r: IndicatorResult) => r.year !== activeReferenceYear);
-    const updatedResults = [...otherResults, newResultForYear].sort((a: IndicatorResult, b: IndicatorResult) => a.year - b.year);
+    const updatedResults = [...otherResults, newResultForYear as IndicatorResult].sort((a: IndicatorResult, b: IndicatorResult) => a.year - b.year);
 
     onUpdateIndicator({ ...indicator, results: updatedResults });
     setIsDirty(false);
@@ -248,7 +240,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
               value={entry.value === null ? '' : String(entry.value).replace('.',',')}
               onChange={(e) => handlePeriodicInputChange(index, 'value', e.target.value)}
               className="col-span-1 mt-1 md:mt-0 block w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary sm:text-xs"
-              aria-label={`${indicator.valueLabel || "Valor"} para ${entry.periodLabel}`}
+              aria-label={`${indicator.valueLabel || "Valor"} para ${entry.periodLabel} em ${activeReferenceYear}`}
             />
             {indicator.requiresAuxValue && (
               <input
@@ -257,7 +249,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
                 value={entry.auxValue === null ? '' : String(entry.auxValue).replace('.',',')}
                 onChange={(e) => handlePeriodicInputChange(index, 'auxValue', e.target.value)}
                 className="col-span-1 mt-1 md:mt-0 block w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-secondary focus:border-secondary sm:text-xs"
-                aria-label={`${indicator.auxValueLabel || "Valor Auxiliar"} para ${entry.periodLabel}`}
+                aria-label={`${indicator.auxValueLabel || "Valor Auxiliar"} para ${entry.periodLabel} em ${activeReferenceYear}`}
               />
             )}
           </div>
@@ -267,12 +259,11 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
       <div className="mt-4 flex justify-end">
         <button
           onClick={handleSubmitResults}
-          disabled={!isDirty}
+          disabled={!isDirty || Object.values(analysisLoadingStates).some(s => s) || saveStatus === 'saved'}
           className={`font-bold py-2 px-4 rounded-lg shadow-md flex items-center transition-colors duration-200
-            ${!isDirty && saveStatus === 'idle' ? 'bg-gray-400 cursor-not-allowed' : ''}
-            ${isDirty ? 'bg-secondary hover:bg-secondary-focus text-white' : ''}
-            ${saveStatus === 'saved' ? 'bg-success text-white' : ''}
-          `}
+            ${!isDirty || saveStatus === 'saved' ? 'bg-gray-400 cursor-not-allowed' : 'bg-secondary hover:bg-secondary-focus'}
+            ${saveStatus === 'saved' ? 'bg-green-500 hover:bg-green-600' : ''}
+             text-white`}
         >
           <SaveButtonContent />
         </button>
@@ -289,7 +280,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
               analysis={section.analysis}
               error={section.error}
               loading={section.loading}
-              disabled={section.disabledOverride || Object.values(analysisLoadingStates).some(s => s)}
+              disabled={section.disabledOverride}
               onTrigger={() => handleTriggerAnalysis(section.type as LocalAnalysisType)}
               onClose={() => handleCloseAnalysis(section.type as LocalAnalysisType)}
             />

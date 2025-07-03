@@ -14,23 +14,22 @@ export enum Periodicity {
 }
 
 export interface PeriodicEntry {
-  periodLabel: string; // e.g., "Jan", "Fev", ..., "Sem1", "Anual"
+  periodLabel: string;
   value: number | null;
   auxValue?: number | null;
 }
 
-export interface IndicatorResult { // Represents data for ONE YEAR for an indicator
+export interface IndicatorResult {
   year: number;
-  periodicData: PeriodicEntry[]; // Raw data from periods
+  periodicData: PeriodicEntry[];
   periodicityUsed?: Periodicity;
-  consolidatedValue: number | null; // Consolidated value for the year (e.g., average, sum)
-  consolidatedAuxValue?: number | null; // Consolidated auxiliary value if needed
-  notaFinal: number | null; // Score calculated on the consolidatedValue
+  consolidatedValue: number | null;
+  consolidatedAuxValue?: number | null;
+  notaFinal: number | null;
 
-  // Analyses for the current year's results
-  analysisLastPeriod?: string; // Analysis A: Last period's result vs. IDSS spec
-  analysisYearlyConsolidated?: string; // Analysis B: Year's consolidated result vs. IDSS spec
-  analysisYearlyComparison?: string; // Analysis C: Year's consolidated result vs. Previous Year
+  analysisLastPeriod?: string;
+  analysisYearlyConsolidated?: string;
+  analysisYearlyComparison?: string;
 
   errorLastPeriod?: string;
   errorYearlyConsolidated?: string;
@@ -41,20 +40,20 @@ export interface IndicatorParameters {
   target?: number;
   worse?: number;
   indiceReferenciaRPC?: number;
-  [key: string]: any; // Keep for flexibility for other less-common params
+  [key: string]: any;
 }
 
 export type CalcularNotaFinalFunction = (
   consolidatedValue: number | null,
   consolidatedAuxValue?: number | null,
   operatorSize?: OperatorSize,
-  indicatorParameters?: Record<string, IndicatorParameters> // Accept string for OperatorSize keys
+  indicatorParameters?: Record<string, IndicatorParameters>
 ) => number | null;
 
 export enum IDSSIndicatorWeightLevel {
-  HIGH = 1,   // Corresponds to PDF Peso 3 (User's Peso 1 - Red)
-  MEDIUM = 2, // Corresponds to PDF Peso 2 (User's Peso 2 - Yellow)
-  LOW = 3,    // Corresponds to PDF Peso 1 (User's Peso 3 - Green)
+  HIGH = 1,
+  MEDIUM = 2,
+  LOW = 3,
 }
 
 export interface Indicator {
@@ -63,19 +62,19 @@ export interface Indicator {
   simpleName: string;
   dimensionId: IDSSDimensionName;
   weightInDimension: number;
-  idssWeightLevel?: IDSSIndicatorWeightLevel; // Importance level based on PDF "Peso"
+  idssWeightLevel?: IDSSIndicatorWeightLevel;
   description: string;
   targetDescription: string;
   periodicityOptions: Periodicity[];
-  currentPeriodicity: Periodicity; // This will now reflect the periodicity for the ACTIVE REFERENCE YEAR if modified
-  results: IndicatorResult[]; // Array of yearly results
+  currentPeriodicity: Periodicity;
+  results: IndicatorResult[];
   parametersByPorte?: Record<OperatorSize, IndicatorParameters>;
   calcularNotaFinalFn: CalcularNotaFinalFunction;
   requiresAuxValue?: boolean;
   auxValueLabel?: string;
   valueLabel?: string;
   isRate?: boolean;
-  valueConsolidationFn?: (periodicValues: (number | null)[]) => number | null; // e.g. average, sum, last
+  valueConsolidationFn?: (periodicValues: (number | null)[]) => number | null;
   responsibleSector?: string;
   targetDirection?: 'up' | 'down' | 'none';
 }
@@ -92,28 +91,28 @@ export interface Dimension {
   name: string;
   weightInIDSS: number;
   indicators: Indicator[];
-  notaFinalCalculada: number | null; // This will be for the activeReferenceYear
+  notaFinalCalculada: number | null;
   analysis?: string;
   error?: string;
 }
 
 export interface HistoricalIdssScore {
-  programYear: number; // e.g. IDSS 2024
-  baseYear: number;    // e.g. Dados de 2023
+  programYear: number;
+  baseYear: number;
   score: number | null;
-  source: string; // "Unimed Resende (Oficial)" or "ANS"
+  source: string;
 }
 
 export interface IDSS {
   dimensions: Dimension[];
-  notaFinalCalculada: number | null; // This will be for the activeReferenceYear
+  notaFinalCalculada: number | null;
   analysis?: string;
   error?: string;
   overallIndicatorAnalysis?: string;
   overallIndicatorError?: string;
   executiveReport?: string;
   executiveReportError?: string;
-  historicalIdssScores?: HistoricalIdssScore[]; // Populated from historical_data.json
+  historicalIdssScores?: HistoricalIdssScore[];
 }
 
 export type AnalysisType = 
@@ -140,20 +139,13 @@ export interface GeminiAnalysisRequest {
     notaFinal?: number | null;
     responsibleSector?: string;
     targetDirection?: 'up' | 'down' | 'none';
-    activeReferenceYear?: number; // Year this specific indicator data pertains to
+    activeReferenceYear?: number;
   };
   dimensionData?: Dimension; 
   idssData?: IDSS; 
   overallIndicatorsData?: Indicator[]; 
   operatorSize?: OperatorSize;
-  activeReferenceYear?: number; // Overarching reference year for the analysis context
-}
-
-// --- Historical Data Archive Structure ---
-
-export interface HistoricalDimensionScoreEntry {
-  dimensionId: IDSSDimensionName;
-  score: number | null;
+  activeReferenceYear?: number;
 }
 
 export interface HistoricalDimensionYearlyScores {
@@ -187,15 +179,12 @@ export interface HistoricalDataArchive {
   indicatorHistoricalData: HistoricalIndicatorRecord[];
 }
 
-
-// --- REDUCER ACTION TYPES ---
-
 export type IdssAction =
   | { type: 'MERGE_OPERATIONAL_DATA'; payload: Partial<IDSS> }
   | { type: 'UPDATE_INDICATOR'; payload: Indicator }
   | { type: 'CALCULATE_ALL_SCORES'; payload: { activeReferenceYear: number; operatorSize: OperatorSize } }
   | { type: 'SET_ANALYSIS_RESULT'; payload: {
-      analysisType: 'dimension' | 'idss' | 'overall_indicators' | 'executive_report';
+      analysisType: AnalysisType;
       analysisText?: string;
       error?: string;
       dimensionId?: IDSSDimensionName;
@@ -208,12 +197,11 @@ export type IdssAction =
       historicalArchive: HistoricalDataArchive;
     }};
 
-
 export type HistoricalDataAction =
   | { type: 'SET_ARCHIVE_DATA'; payload: HistoricalDataArchive }
   | { type: 'UPDATE_IDSS_SCORE'; payload: { year: number; score: number | null } }
   | { type: 'UPDATE_DIMENSION_SCORE'; payload: { year:number; dimensionId: IDSSDimensionName; score: number | null } }
-  | { type: 'UPDATE_INDICATOR_FIELD'; payload: { year: number; indicatorId: string; field: keyof Omit<HistoricalIndicatorYearlyEntry, 'year' | 'periodicData'>; value: any; } }
+  | { type: 'UPDATE_INDICATOR_FIELD'; payload: { year: number; indicatorId: string; field: 'notaFinal' | 'consolidatedValue' | 'consolidatedAuxValue'; value: number | null; } }
   | { type: 'UPDATE_INDICATOR_PERIODICITY'; payload: { year: number; indicatorId: string; periodicity: Periodicity | null } }
   | { type: 'UPDATE_PERIODIC_DATA'; payload: { year: number; indicatorId: string; periodIndex: number; field: 'value' | 'auxValue'; value: number | null } }
   | { type: 'ENSURE_YEAR_DATA_EXISTS'; payload: { year: number; initialIndicators: Indicator[] }};
