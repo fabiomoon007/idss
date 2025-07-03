@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dimension, IDSSDimensionName, Indicator, AnalysisType } from '../types';
+import { Dimension, IDSSDimensionName, Indicator, AnalysisType } from '@/types';
 import { Zap, CheckSquare, DollarSign, Activity, ListChecks, Brain, X, AlertCircle, Eye } from 'lucide-react';
 
 interface DimensionsGridProps {

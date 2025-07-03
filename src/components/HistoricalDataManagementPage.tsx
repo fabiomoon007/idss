@@ -7,9 +7,9 @@ import {
   Dimension,
   Periodicity, 
   HistoricalDataAction
-} from '../types';
-import { CURRENT_YEAR as APP_CURRENT_YEAR } from '../constants';
-import { historicalDataReducer } from '../state/historicalDataReducer';
+} from '@/types';
+import { CURRENT_YEAR as APP_CURRENT_YEAR } from '@/constants';
+import { historicalDataReducer } from '@/state/historicalDataReducer';
 import { ArrowLeft, AlertTriangle, CheckCircle, Download, Loader2 } from 'lucide-react';
 
 interface HistoricalDataManagementPageProps {
@@ -133,7 +133,7 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
           }}
           className="mt-1 block w-full sm:w-1/3 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-secondary focus:border-secondary sm:text-sm rounded-md shadow-sm"
         >
-          {yearsOptions.map(year => (
+          {yearsOptions.map((year: number) => (
             <option key={year} value={year}>{year}</option>
           ))}
         </select>
@@ -160,7 +160,7 @@ export const HistoricalDataManagementPage: React.FC<HistoricalDataManagementPage
         <section className="p-4 border border-gray-200 rounded-lg shadow-sm bg-base-200">
           <h3 className="text-lg font-semibold text-primary mb-3">Notas Finais das Dimensões ({selectedYear})</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {allDimensions.map(dim => (
+            {allDimensions.map((dim: Dimension) => (
               <div key={dim.id}>
                 <label htmlFor={`dim-score-${dim.id}-${selectedYear}`} className="block text-sm font-medium text-gray-700">
                   {dim.name} ({dim.id}):

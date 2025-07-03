@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { IDSSIndicatorWeightLevel } from '../types';
+import { IDSSIndicatorWeightLevel } from '@/types';
 
 interface IndicatorWeightBarProps {
   level: IDSSIndicatorWeightLevel;

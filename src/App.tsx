@@ -10,12 +10,12 @@ import {
     GeminiAnalysisRequest,
     HistoricalDataArchive,
     IndicatorResult
-} from './types';
-import { idssReducer } from './state/idssReducer';
-import { INITIAL_INDICATORS } from './data/initialIndicators';
-import { CURRENT_YEAR } from './constants';
-import { getGeminiAnalysis } from './services/geminiService';
-import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from './components';
+} from '@/types';
+import { idssReducer } from '@/state/idssReducer';
+import { INITIAL_INDICATORS } from '@/data/initialIndicators';
+import { CURRENT_YEAR } from '@/constants';
+import { getGeminiAnalysis } from '@/services/geminiService';
+import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from '@/components';
 import { FileText, Database, Users, ArrowLeft, Loader2, Save, AlertTriangle } from 'lucide-react';
 
 const initializeState = (initialIndicators: Indicator[]): IDSS => {
@@ -93,7 +93,7 @@ export const App: React.FC = () => {
     if (!loading) {
       dispatch({ type: 'CALCULATE_ALL_SCORES', payload: { activeReferenceYear, operatorSize } });
     }
-  }, [loading, activeReferenceYear, operatorSize, idssData.dimensions, idssData.dimensions.flatMap(d => d.indicators.flatMap(i => i.results))]);
+  }, [loading, activeReferenceYear, operatorSize, idssData.dimensions]);
 
   const handleUpdateIndicator = useCallback((updatedIndicator: Indicator) => {
     dispatch({ type: 'UPDATE_INDICATOR', payload: updatedIndicator });
@@ -230,7 +230,7 @@ export const App: React.FC = () => {
                 Ano Base de Referência:
               </label>
               <select id="year-select" value={activeReferenceYear} onChange={(e) => setActiveReferenceYear(parseInt(e.target.value))} className="block w-full text-sm p-2 border border-gray-300 rounded-md shadow-sm focus:ring-secondary focus:border-secondary">
-                {years.map(year => <option key={year} value={year}>{year}</option>)}
+                {years.map((year: number) => <option key={year} value={year}>{year}</option>)}
               </select>
             </div>
              <div className="w-full sm:w-auto self-end pt-5">

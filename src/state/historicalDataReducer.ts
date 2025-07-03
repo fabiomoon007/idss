@@ -1,6 +1,6 @@
 
-import { HistoricalDataArchive, HistoricalDataAction, Periodicity, HistoricalPeriodicEntry, Indicator } from '../types';
-import { getPeriodLabels } from '../constants';
+import { HistoricalDataArchive, HistoricalDataAction, Periodicity, HistoricalPeriodicEntry, Indicator } from '@/types';
+import { getPeriodLabels } from '@/constants';
 
 const getDefaultHistoricalPeriodicData = (periodicity: Periodicity | null): HistoricalPeriodicEntry[] | null => {
   if (!periodicity) return null;

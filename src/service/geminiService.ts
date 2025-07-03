@@ -1,4 +1,5 @@
-import { GeminiAnalysisRequest } from '../types';
+
+import { GeminiAnalysisRequest } from '@/types';
 
 export const getGeminiAnalysis = async (request: GeminiAnalysisRequest): Promise<string> => {
   try {

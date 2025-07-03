@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
-import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '../types';
-import { ChartComponent, PeriodicChartDataPoint } from './ChartComponent'; 
-import { IndicatorWeightBar } from './IndicatorWeightBar';
-import { IndicatorAnalysisSection } from './IndicatorAnalysisSection';
-import { getPeriodLabels, averageConsolidation } from '../constants';
-import { getGeminiAnalysis } from '../services/geminiService';
+import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '@/types';
+import { ChartComponent, PeriodicChartDataPoint } from '@/components/ChartComponent'; 
+import { IndicatorWeightBar } from '@/components/IndicatorWeightBar';
+import { IndicatorAnalysisSection } from '@/components/IndicatorAnalysisSection';
+import { getPeriodLabels, averageConsolidation } from '@/constants';
+import { getGeminiAnalysis } from '@/services/geminiService';
 import { Save, ArrowUpCircle, ArrowDownCircle, BarChart2, TrendingUp, Info, Check } from 'lucide-react';
 
 interface IndicatorCardProps {
