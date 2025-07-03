@@ -14,7 +14,7 @@ import { INITIAL_INDICATORS } from './data/initialIndicators';
 import { CURRENT_YEAR } from './constants';
 import { getGeminiAnalysis } from './services/geminiService';
 import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from './components';
-import { FileText, Database, Users, ArrowLeft } from 'lucide-react';
+import { FileText, Database, Users, ArrowLeft, Loader2 } from 'lucide-react';
 
 const initializeState = (initialIndicators: Indicator[]): IDSS => {
   const dimensions: Record<IDSSDimensionName, Dimension> = {
@@ -57,9 +57,8 @@ export const App: React.FC = () => {
       const controller = new AbortController();
       const signal = controller.signal;
 
-      // Em um projeto Vite, arquivos na pasta `public` são servidos na raiz.
-      const idssPromise = fetch('/idss_data.json', { signal });
-      const historicalPromise = fetch('/historical_data.json', { signal });
+      const idssPromise = fetch(`/idss_data.json?v=${new Date().getTime()}`, { signal });
+      const historicalPromise = fetch(`/historical_data.json?v=${new Date().getTime()}`, { signal });
 
       const [idssResponse, historicalResponse] = await Promise.all([idssPromise, historicalPromise]);
 
@@ -73,20 +72,19 @@ export const App: React.FC = () => {
       
       dispatch({ type: 'MERGE_OPERATIONAL_DATA', payload: savedIdssData });
       dispatch({ type: 'MERGE_HISTORICAL_DATA', payload: { historicalArchive } });
-      dispatch({ type: 'CALCULATE_ALL_SCORES', payload: { activeReferenceYear, operatorSize } });
     
     } catch (e: any) {
        if (e.name !== 'AbortError') {
-         setError(`Erro ao carregar dados iniciais: ${e.message}`);
+         setError(`Erro ao carregar dados iniciais: ${e.message}. Verifique se os arquivos JSON estão na pasta 'public'.`);
        }
     } finally {
       setLoading(false);
     }
-  }, [activeReferenceYear, operatorSize]);
+  }, []);
 
   useEffect(() => {
     loadData();
-  }, []); // Carrega os dados apenas uma vez na montagem
+  }, [loadData]);
 
   useEffect(() => {
     if (!loading && idssData) {
@@ -96,7 +94,6 @@ export const App: React.FC = () => {
 
   const handleUpdateIndicator = (updatedIndicator: Indicator) => {
     dispatch({ type: 'UPDATE_INDICATOR', payload: updatedIndicator });
-    dispatch({ type: 'CALCULATE_ALL_SCORES', payload: { activeReferenceYear, operatorSize } });
   };
   
   const handleTriggerAnalysis = async (analysisType: AnalysisType, relatedData?: Dimension) => {
@@ -115,7 +112,7 @@ export const App: React.FC = () => {
         requestPayload.overallIndicatorsData = idssData.dimensions.flatMap(d => d.indicators);
     } else if (analysisType === 'dimension' && relatedData) {
         requestPayload.dimensionData = relatedData;
-    } else if (analysisType !== 'executive_report') { // Executive report may not need specific data
+    } else if (analysisType !== 'executive_report') { // Executive report might not need data
         console.error("Disparo de análise inválido: Dados ausentes para o tipo de análise.");
         setAnalysisLoadingStates(prev => ({ ...prev, [loadingKey]: false }));
         return;
@@ -159,10 +156,12 @@ export const App: React.FC = () => {
   
   const renderContent = () => {
     if (loading) {
-      return <div className="text-center p-10">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-secondary mx-auto"></div>
-                <p className="mt-4 text-xl text-primary">Carregando Dados...</p>
-             </div>;
+      return (
+        <div className="text-center p-10">
+            <Loader2 className="animate-spin h-16 w-16 text-secondary mx-auto" />
+            <p className="mt-4 text-xl text-primary">Carregando Dados...</p>
+        </div>
+      );
     }
     if (error) {
       return <div className="text-center p-10 text-error bg-red-50 rounded-lg shadow-md">{error}</div>;
@@ -236,7 +235,7 @@ export const App: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center">
              <FileText size={40} className="text-primary" />
-             <h1 className="text-3xl font-bold text-primary ml-3">Radar IDSS Netlify</h1>
+             <h1 className="text-3xl font-bold text-primary ml-3">Radar IDSS</h1>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
             <div className="w-full sm:w-auto">
@@ -263,7 +262,7 @@ export const App: React.FC = () => {
                   className="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm"
                   title="Gerenciar os dados fixos de anos anteriores que servem de base para comparações."
                 >
-                  <Database size={16} className="mr-2" /> Gerenciar Dados Históricos
+                  <Database size={16} className="mr-2" /> Gerenciar Dados
                 </button>
             </div>
           </div>

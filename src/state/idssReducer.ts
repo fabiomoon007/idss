@@ -2,7 +2,6 @@ import { IDSS, IdssAction, OperatorSize } from '../types';
 
 const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize: OperatorSize): IDSS => {
     let finalIdssScore = 0;
-    let totalIdssWeight = 0;
 
     const updatedDimensions = state.dimensions.map(dim => {
         let dimTotalScore = 0;
@@ -12,16 +11,24 @@ const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize:
         const updatedIndicators = dim.indicators.map(ind => {
             let resultForYear = ind.results.find(r => r.year === activeReferenceYear);
             
-            // If there's no result entry for the active year, create a default one.
             if (!resultForYear) {
-                // This case should ideally be handled upstream, but as a safeguard:
-                return ind;
+                // Safeguard: Create a default result structure if none exists for the active year.
+                // This is crucial for new years added to the system.
+                const newResult = {
+                    year: activeReferenceYear,
+                    periodicData: [],
+                    consolidatedValue: null,
+                    consolidatedAuxValue: null,
+                    notaFinal: null,
+                };
+                ind.results.push(newResult);
+                resultForYear = newResult;
             }
 
             const periodicValues = resultForYear.periodicData.map(p => p.value);
             const consolidatedValue = ind.valueConsolidationFn 
                 ? ind.valueConsolidationFn(periodicValues)
-                : (periodicValues.length > 0 ? periodicValues[0] : null); // Default to first value if no function
+                : (periodicValues.length > 0 ? periodicValues[0] : null);
             
             const periodicAuxValues = resultForYear.periodicData.map(p => p.auxValue ?? null);
             const consolidatedAuxValue = (ind.requiresAuxValue && ind.valueConsolidationFn)
@@ -35,7 +42,6 @@ const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize:
                 ind.parametersByPorte
             );
 
-            // Update the specific year's result immutably
             const updatedResults = ind.results.map(r => 
                 r.year === activeReferenceYear 
                     ? { ...r, consolidatedValue, consolidatedAuxValue, notaFinal } 
@@ -43,9 +49,8 @@ const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize:
             );
             
             if (notaFinal !== null) {
-                // Bonus indicators contribute differently
                 if (ind.simpleName.toLowerCase().includes('(bônus)')) {
-                    dimBonusScore += notaFinal * ind.weightInDimension; // weightInDimension is the bonus factor (e.g., 0.1, 0.15)
+                    dimBonusScore += notaFinal * ind.weightInDimension;
                 } else {
                     dimTotalScore += notaFinal * ind.weightInDimension;
                     dimTotalWeight += ind.weightInDimension;
@@ -59,13 +64,12 @@ const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize:
 
         if (finalDimScore !== null && !isNaN(finalDimScore)) {
             finalIdssScore += finalDimScore * dim.weightInIDSS;
-            totalIdssWeight += dim.weightInIDSS;
         }
 
         return { ...dim, indicators: updatedIndicators, notaFinalCalculada: finalDimScore };
     });
 
-    const finalCalculatedIdss = totalIdssWeight > 0 ? finalIdssScore : null; // Raw sum of weighted scores, not divided again.
+    const finalCalculatedIdss = finalIdssScore > 0 ? parseFloat(finalIdssScore.toFixed(4)) : null;
 
     return { ...state, dimensions: updatedDimensions, notaFinalCalculada: finalCalculatedIdss };
 };
@@ -79,7 +83,6 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                 return state;
             }
 
-            // Deep merge of the saved data into the initial state structure.
             const mergedDimensions = state.dimensions.map(initialDim => {
                 const savedDim = savedData.dimensions?.find(d => d.id === initialDim.id);
                 if (!savedDim) return initialDim;
@@ -87,8 +90,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                 const mergedIndicators = initialDim.indicators.map(initialIndicator => {
                     const savedIndicator = savedDim.indicators?.find(i => i.id === initialIndicator.id);
                     if (!savedIndicator) return initialIndicator;
-
-                    // Ensure all years from initial indicator are present, then merge saved data.
+                    
                     const allYears = new Set([...initialIndicator.results.map(r => r.year), ...(savedIndicator.results?.map(r => r.year) ?? [])]);
                     
                     const mergedResults = Array.from(allYears).map(year => {
@@ -97,7 +99,6 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                          return { ...initialResult, ...savedResult };
                     });
 
-                    // Merge indicator properties
                     return {
                         ...initialIndicator,
                         ...savedIndicator,
@@ -105,7 +106,6 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                     };
                 });
                 
-                // Merge dimension properties
                 return {
                     ...initialDim,
                     ...savedDim,
@@ -113,7 +113,6 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                 };
             });
             
-            // Merge top-level IDSS properties
             return {
                 ...state,
                 ...savedData,
@@ -135,7 +134,6 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                         : dim
                 ),
             };
-            // Do not recalculate here, let the main effect in App.tsx handle it.
             return newState;
         }
 
@@ -195,34 +193,31 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                     const historicalInd = historicalArchive.indicatorHistoricalData.find(h => h.id === ind.id);
                     if (!historicalInd) return ind;
 
-                    const newResults = ind.results.map(opResult => {
-                        const histResult = historicalInd.results.find(h => h.year === opResult.year);
-                        if (histResult) {
-                            return {
-                                ...opResult,
-                                // Only merge specific historical fields, don't overwrite the whole object
-                                consolidatedValue: histResult.consolidatedValue,
-                                consolidatedAuxValue: histResult.consolidatedAuxValue,
-                                notaFinal: histResult.notaFinal,
-                            };
-                        }
-                        return opResult;
-                    });
+                    let opResults = [...ind.results];
                     
-                    // Add historical years that might not be in operational data yet
                     historicalInd.results.forEach(histResult => {
-                        if (!newResults.some(r => r.year === histResult.year)) {
-                            newResults.push({
+                        const opResultIndex = opResults.findIndex(r => r.year === histResult.year);
+                        if (opResultIndex > -1) {
+                            // Merge historical data into existing operational year data
+                            opResults[opResultIndex] = {
+                                ...opResults[opResultIndex],
+                                consolidatedValue: opResults[opResultIndex].consolidatedValue ?? histResult.consolidatedValue,
+                                consolidatedAuxValue: opResults[opResultIndex].consolidatedAuxValue ?? histResult.consolidatedAuxValue,
+                                notaFinal: opResults[opResultIndex].notaFinal ?? histResult.notaFinal
+                            };
+                        } else {
+                            // Add historical year if not present in operational data
+                            opResults.push({
                                 year: histResult.year,
                                 consolidatedValue: histResult.consolidatedValue,
                                 consolidatedAuxValue: histResult.consolidatedAuxValue,
                                 notaFinal: histResult.notaFinal,
-                                periodicData: [], // Default empty periodic data
+                                periodicData: [], // Start with empty periodic data for simplicity
                             });
                         }
                     });
 
-                    return { ...ind, results: newResults.sort((a,b) => a.year - b.year) };
+                    return { ...ind, results: opResults.sort((a,b) => a.year - b.year) };
                 })
             }));
 

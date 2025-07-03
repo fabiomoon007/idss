@@ -10,13 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^0.15.0",
     "lucide-react": "^0.400.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@google/genai": "^0.15.0",
     "@netlify/functions": "^2.6.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
