@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo, ChangeEvent } from 'react';
 import { Indicator, IndicatorResult, OperatorSize, Periodicity, PeriodicEntry, AnalysisType as GeminiAnalysisTypeInternal, GeminiAnalysisRequest } from '../types';
 import { ChartComponent, PeriodicChartDataPoint } from './ChartComponent'; 
@@ -17,7 +18,7 @@ interface IndicatorCardProps {
 type LocalAnalysisType = 'lastPeriod' | 'yearlyConsolidated' | 'yearlyComparison';
 
 export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdateIndicator, operatorSize, activeReferenceYear }) => {
-  const [activeYearResult, setActiveYearResult] = useState(() => indicator.results.find(r => r.year === activeReferenceYear));
+  const [activeYearResult, setActiveYearResult] = useState(() => indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear));
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'idle'>('idle');
   
@@ -49,7 +50,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
   const [analysisLoadingStates, setAnalysisLoadingStates] = useState({ lastPeriod: false, yearlyConsolidated: false, yearlyComparison: false });
 
   useEffect(() => {
-    const newActiveYearResult = indicator.results.find(r => r.year === activeReferenceYear);
+    const newActiveYearResult = indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear);
     setActiveYearResult(newActiveYearResult);
     const newPeriodicity = newActiveYearResult?.periodicityUsed || indicator.currentPeriodicity;
     setCurrentPeriodicity(newPeriodicity);
@@ -117,8 +118,8 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
         errorLastPeriod: undefined, errorYearlyConsolidated: undefined, errorYearlyComparison: undefined,
     };
     
-    const otherResults = indicator.results.filter(r => r.year !== activeReferenceYear);
-    const updatedResults = [...otherResults, newResultForYear].sort((a,b) => a.year - b.year);
+    const otherResults = indicator.results.filter((r: IndicatorResult) => r.year !== activeReferenceYear);
+    const updatedResults = [...otherResults, newResultForYear].sort((a: IndicatorResult, b: IndicatorResult) => a.year - b.year);
 
     onUpdateIndicator({ ...indicator, results: updatedResults });
     setIsDirty(false);
@@ -132,7 +133,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     const errorField = `error${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}` as keyof IndicatorResult;
     
     const updateError = (message: string) => {
-       const updatedResults = indicator.results.map(r => r.year === activeReferenceYear ? {...r, [errorField]: message} : r);
+       const updatedResults = indicator.results.map((r: IndicatorResult) => r.year === activeReferenceYear ? {...r, [errorField]: message} : r);
        onUpdateIndicator({...indicator, results: updatedResults});
        setAnalysisLoadingStates(prev => ({...prev, [analysisType]: false}));
     };
@@ -141,7 +142,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     
     try {
         const lastFilledEntry = [...activeYearPeriodicInput].reverse().find(p => p.value !== null);
-        const previousYearResult = indicator.results.find(r => r.year === activeReferenceYear - 1);
+        const previousYearResult = indicator.results.find((r: IndicatorResult) => r.year === activeReferenceYear - 1);
 
         const baseIndicatorData = {
           indicatorName: indicator.name, simpleName: indicator.simpleName, description: indicator.description,
@@ -166,7 +167,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
     
         const analysisText = await getGeminiAnalysis(request);
         const analysisField = `analysis${analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}` as keyof IndicatorResult;
-        const updatedResults = indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: analysisText, [errorField]: undefined } : r);
+        const updatedResults = indicator.results.map((r: IndicatorResult) => r.year === activeReferenceYear ? { ...r, [analysisField]: analysisText, [errorField]: undefined } : r);
         onUpdateIndicator({...indicator, results: updatedResults});
     } catch (e: any) {
         updateError(e.message || `Erro na análise (${analysisType})`);
@@ -178,7 +179,7 @@ export const IndicatorCard: React.FC<IndicatorCardProps> = ({ indicator, onUpdat
   const handleCloseAnalysis = (analysisTypeToClose: LocalAnalysisType) => {
     const analysisField = `analysis${analysisTypeToClose.charAt(0).toUpperCase() + analysisTypeToClose.slice(1)}` as keyof IndicatorResult;
     const errorField = `error${analysisTypeToClose.charAt(0).toUpperCase() + analysisTypeToClose.slice(1)}` as keyof IndicatorResult;
-    const updatedResults = indicator.results.map(r => r.year === activeReferenceYear ? { ...r, [analysisField]: undefined, [errorField]: undefined } : r);
+    const updatedResults = indicator.results.map((r: IndicatorResult) => r.year === activeReferenceYear ? { ...r, [analysisField]: undefined, [errorField]: undefined } : r);
     onUpdateIndicator({...indicator, results: updatedResults});
   };
 

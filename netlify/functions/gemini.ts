@@ -1,3 +1,4 @@
+
 import type { Handler } from "@netlify/functions";
 import { GoogleGenAI } from "@google/genai";
 import type { GeminiAnalysisRequest, Indicator, Dimension, IDSS } from "../../src/types";
@@ -31,7 +32,7 @@ Setor Responsável: ${responsibleSector || 'Não definido'}
     switch (type) {
         case 'indicator_last_period':
             prompt += `
-Análise do Período: O resultado para o período de "${currentPeriodLabel}" foi ${formatNumber(currentValue)}.
+Análise do Período: O resultado para o período de "${currentPeriodLabel ?? 'N/A'}" foi ${formatNumber(currentValue)}.
 Com base na meta, este resultado é bom ou ruim? Por quê? Forneça uma análise concisa (máximo 2-3 frases) e uma recomendação ou ponto de atenção claro e direto.`;
             break;
         case 'indicator_yearly_consolidated':
@@ -52,7 +53,7 @@ const buildDimensionPrompt = (data: Dimension | undefined, year: number | undefi
     if (!data) return "Dados da dimensão ausentes.";
     
     const indicatorLines = data.indicators
-        .sort((a,b) => parseFloat(a.id) - parseFloat(b.id))
+        .sort((a: Indicator, b: Indicator) => parseFloat(a.id) - parseFloat(b.id))
         .map(ind => {
           const result = ind.results.find(r => r.year === year);
           return `- ${ind.simpleName}: Nota ${formatNumber(result?.notaFinal)}`
@@ -95,7 +96,7 @@ Forneça um resumo executivo de alto nível em português do Brasil (máximo 3-4
 const buildOverallIndicatorsPrompt = (data: Indicator[] | undefined, year: number | undefined): string => {
     if (!data || data.length === 0) return "Dados de indicadores ausentes.";
 
-    const allScores: { name: string; score: number | null }[] = data.map(ind => {
+    const allScores: { name: string; score: number | null }[] = data.map((ind: Indicator) => {
         const result = ind.results.find(r => r.year === year);
         return { name: ind.simpleName, score: result ? result.notaFinal : null };
     }).filter(item => item.score !== null);

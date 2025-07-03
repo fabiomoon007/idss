@@ -1,20 +1,20 @@
-import { IDSS, IdssAction, OperatorSize } from '../types';
+
+import { IDSS, IdssAction, Dimension, Indicator, IndicatorResult, HistoricalDataArchive, OperatorSize, HistoricalIndicatorYearlyEntry } from '../types';
 
 const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize: OperatorSize): IDSS => {
     let finalIdssScore = 0;
     const totalIdssWeight = state.dimensions.reduce((sum, dim) => sum + dim.weightInIDSS, 0);
 
-    const updatedDimensions = state.dimensions.map(dim => {
+    const updatedDimensions = state.dimensions.map((dim: Dimension) => {
         let dimTotalScore = 0;
         let dimTotalWeight = 0;
         let dimBonusScore = 0;
 
-        const updatedIndicators = dim.indicators.map(ind => {
-            let resultForYear = ind.results.find(r => r.year === activeReferenceYear);
+        const updatedIndicators = dim.indicators.map((ind: Indicator) => {
+            let resultForYear = ind.results.find((r: IndicatorResult) => r.year === activeReferenceYear);
             
             if (!resultForYear) {
-                // Safeguard: Create a default result structure if none exists for the active year.
-                const newResult = {
+                const newResult: IndicatorResult = {
                     year: activeReferenceYear,
                     periodicData: [],
                     consolidatedValue: null,
@@ -42,13 +42,13 @@ const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize:
                 ind.parametersByPorte
             );
 
-            const updatedResults = ind.results.map(r => 
+            const updatedResults = ind.results.map((r: IndicatorResult) => 
                 r.year === activeReferenceYear 
                     ? { ...r, consolidatedValue, consolidatedAuxValue, notaFinal } 
                     : r
             );
             
-            if (notaFinal !== null) {
+            if (notaFinal !== null && !isNaN(notaFinal)) {
                 if (ind.simpleName.toLowerCase().includes('(bônus)')) {
                     dimBonusScore += notaFinal * ind.weightInDimension;
                 } else {
@@ -62,14 +62,13 @@ const calculateScores = (state: IDSS, activeReferenceYear: number, operatorSize:
         const baseDimScore = dimTotalWeight > 0 ? dimTotalScore / dimTotalWeight : 0;
         const finalDimScore = parseFloat(Math.min(1, baseDimScore + dimBonusScore).toFixed(4));
 
-        if (finalDimScore !== null && !isNaN(finalDimScore)) {
+        if (!isNaN(finalDimScore)) {
             finalIdssScore += finalDimScore * dim.weightInIDSS;
         }
 
         return { ...dim, indicators: updatedIndicators, notaFinalCalculada: finalDimScore };
     });
 
-    // Use the calculated total weight to correctly normalize the final score.
     const finalCalculatedIdss = totalIdssWeight > 0 ? parseFloat((finalIdssScore / totalIdssWeight).toFixed(4)) : null;
 
     return { ...state, dimensions: updatedDimensions, notaFinalCalculada: finalCalculatedIdss };
@@ -84,26 +83,26 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                 return state;
             }
 
-            const mergedDimensions = state.dimensions.map(initialDim => {
-                const savedDim = savedData.dimensions?.find(d => d.id === initialDim.id);
+            const mergedDimensions = state.dimensions.map((initialDim: Dimension) => {
+                const savedDim = savedData.dimensions?.find((d: Dimension) => d.id === initialDim.id);
                 if (!savedDim) return initialDim;
 
-                const mergedIndicators = initialDim.indicators.map(initialIndicator => {
-                    const savedIndicator = savedDim.indicators?.find(i => i.id === initialIndicator.id);
+                const mergedIndicators = initialDim.indicators.map((initialIndicator: Indicator) => {
+                    const savedIndicator = savedDim.indicators?.find((i: Indicator) => i.id === initialIndicator.id);
                     if (!savedIndicator) return initialIndicator;
                     
                     const allYears = new Set([...initialIndicator.results.map(r => r.year), ...(savedIndicator.results?.map(r => r.year) ?? [])]);
                     
-                    const mergedResults = Array.from(allYears).map(year => {
-                         const initialResult = initialIndicator.results.find(r => r.year === year) ?? { year, periodicData: [], consolidatedValue: null, notaFinal: null };
-                         const savedResult = savedIndicator.results?.find(r => r.year === year);
+                    const mergedResults = Array.from(allYears).map((year: number) => {
+                         const initialResult = initialIndicator.results.find((r: IndicatorResult) => r.year === year) ?? { year, periodicData: [], consolidatedValue: null, notaFinal: null };
+                         const savedResult = savedIndicator.results?.find((r: IndicatorResult) => r.year === year);
                          return { ...initialResult, ...savedResult };
                     });
 
                     return {
                         ...initialIndicator,
                         ...savedIndicator,
-                        results: mergedResults.sort((a,b) => a.year - b.year)
+                        results: mergedResults.sort((a: IndicatorResult, b: IndicatorResult) => a.year - b.year)
                     };
                 });
                 
@@ -124,18 +123,17 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
         case 'UPDATE_INDICATOR': {
             const newState = {
                 ...state,
-                dimensions: state.dimensions.map(dim =>
+                dimensions: state.dimensions.map((dim: Dimension) =>
                     dim.id === action.payload.dimensionId
                         ? {
                             ...dim,
-                            indicators: dim.indicators.map(ind =>
+                            indicators: dim.indicators.map((ind: Indicator) =>
                                 ind.id === action.payload.id ? action.payload : ind
                             ),
                           }
                         : dim
                 ),
             };
-            // Do not calculate scores here, let the useEffect in App.tsx handle it
             return newState;
         }
 
@@ -155,7 +153,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                 case 'dimension':
                     return {
                         ...state,
-                        dimensions: state.dimensions.map(dim =>
+                        dimensions: state.dimensions.map((dim: Dimension) =>
                             dim.id === dimensionId ? { ...dim, analysis: analysisText, error: error } : dim
                         ),
                     };
@@ -176,7 +174,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                 case 'dimension':
                     return {
                         ...state,
-                        dimensions: state.dimensions.map(dim =>
+                        dimensions: state.dimensions.map((dim: Dimension) =>
                             dim.id === dimensionId ? { ...dim, analysis: undefined, error: undefined } : dim
                         ),
                     };
@@ -189,19 +187,17 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
             const { historicalArchive } = action.payload;
             if (!historicalArchive) return state;
 
-            const newDimensions = state.dimensions.map(dim => ({
+            const newDimensions = state.dimensions.map((dim: Dimension) => ({
                 ...dim,
-                indicators: dim.indicators.map(ind => {
+                indicators: dim.indicators.map((ind: Indicator) => {
                     const historicalInd = historicalArchive.indicatorHistoricalData.find(h => h.id === ind.id);
                     if (!historicalInd) return ind;
 
                     let opResults = [...ind.results];
                     
-                    historicalInd.results.forEach(histResult => {
-                        const opResultIndex = opResults.findIndex(r => r.year === histResult.year);
+                    historicalInd.results.forEach((histResult: HistoricalIndicatorYearlyEntry) => {
+                        const opResultIndex = opResults.findIndex((r: IndicatorResult) => r.year === histResult.year);
                         if (opResultIndex > -1) {
-                            // Merge historical data into existing operational year data,
-                            // but only if the operational data is null. Prioritize user input for the current year.
                             opResults[opResultIndex] = {
                                 ...opResults[opResultIndex],
                                 consolidatedValue: opResults[opResultIndex].consolidatedValue ?? histResult.consolidatedValue,
@@ -209,7 +205,6 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                                 notaFinal: opResults[opResultIndex].notaFinal ?? histResult.notaFinal
                             };
                         } else {
-                            // Add historical year if not present in operational data
                             opResults.push({
                                 year: histResult.year,
                                 consolidatedValue: histResult.consolidatedValue,
@@ -221,7 +216,7 @@ export const idssReducer = (state: IDSS, action: IdssAction): IDSS => {
                         }
                     });
 
-                    return { ...ind, results: opResults.sort((a,b) => a.year - b.year) };
+                    return { ...ind, results: opResults.sort((a: IndicatorResult, b: IndicatorResult) => a.year - b.year) };
                 })
             }));
 
