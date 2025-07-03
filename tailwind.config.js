@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        serif: ['"Playfair Display"', 'serif'],
+      },
       colors: {
         primary: '#004e4c',       // Teal escuro para texto principal, cabeçalhos
         'primary-focus': '#003a38',

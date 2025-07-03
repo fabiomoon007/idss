@@ -8,14 +8,13 @@ import {
     OperatorSize, 
     AnalysisType, 
     GeminiAnalysisRequest,
-    HistoricalDataArchive,
-    IndicatorResult
-} from '@/types';
-import { idssReducer } from '@/state/idssReducer';
-import { INITIAL_INDICATORS } from '@/data/initialIndicators';
-import { CURRENT_YEAR } from '@/constants';
-import { getGeminiAnalysis } from '@/services/geminiService';
-import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from '@/components';
+    HistoricalDataArchive
+} from './types';
+import { idssReducer } from './state/idssReducer';
+import { INITIAL_INDICATORS } from './data/initialIndicators';
+import { CURRENT_YEAR } from './constants';
+import { getGeminiAnalysis } from './services';
+import { DashboardHeader, DimensionsGrid, HistoricalDataManagementPage, IndicatorCard } from './components';
 import { FileText, Database, Users, ArrowLeft, Loader2, Save, AlertTriangle } from 'lucide-react';
 
 const initializeState = (initialIndicators: Indicator[]): IDSS => {
@@ -211,8 +210,10 @@ export const App: React.FC = () => {
       <header className="mb-8 p-6 bg-base-200 shadow-xl rounded-xl">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center">
-             <FileText size={40} className="text-primary" />
-             <h1 className="text-3xl font-bold text-primary ml-3">Radar IDSS</h1>
+             <div className="ml-4">
+                <h1 className="text-4xl font-bold text-primary font-serif">Radar IDSS</h1>
+                <p className="text-xs text-gray-600 mt-1">desenvolvido por Fábio Guimarães no Google AI Studio</p>
+             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
             <div className="w-full sm:w-auto">
@@ -236,8 +237,9 @@ export const App: React.FC = () => {
              <div className="w-full sm:w-auto self-end pt-5">
                 <button 
                   onClick={() => setCurrentView('historicalDataManagement')}
-                  className="w-full bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm"
-                  title="Gerenciar os dados fixos de anos anteriores que servem de base para comparações."
+                  className="w-full bg-blue-800 text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150 flex items-center justify-center text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  title="Gerenciamento de dados desabilitado nesta versão de visualização."
+                  disabled
                 >
                   <Database size={16} className="mr-2" /> Gerenciar Dados
                 </button>
